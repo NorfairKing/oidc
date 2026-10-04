@@ -1,20 +1,5 @@
-# Mutation-plugin config for oidc.
-#
-# Schema: Test.Syd.Mutation.Plugin.OptParse.MutationPluginConfig in the sydtest
-# repo. Wired into nix via the 'configFile' argument of sydtest.mutationCheck
-# in flake.nix.
-#
-# Everything suppressed here is suppressed for every call site at once, so it
-# is only for mutants that no test could ever kill. A mutant that a test could
-# kill belongs in a test, not in this file.
-
 debug: true
 
 operators:
-  # A [Char]-typed expression in this library is a message: the label a parser
-  # gives the thing it is reading, or the sentence a validity check is written
-  # in. Nothing asserts the exact wording of either, so mutating one to ""
-  # produces a mutant no test could kill without pinning prose. Genuine [a]
-  # lists, where a is not Char, keep their mutations.
   ConstEmptyList:
     skip-strings: true
