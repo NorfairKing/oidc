@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -65,7 +64,6 @@ import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as TE
 import Data.Time
-import GHC.Generics (Generic)
 import OIDC.Algorithm
 import OIDC.Provider
 
@@ -94,7 +92,7 @@ data Refusal
     RefusalHasNoLifetime
   | RefusalLivesTooLong !NominalDiffTime !NominalDiffTime
   | RefusalHasNoSubject
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq)
 
 renderRefusal :: Refusal -> String
 renderRefusal = \case
@@ -137,7 +135,7 @@ data Claims = Claims
     -- there is no list to get out of step with what issuers send.
     claimsAll :: !(Map Text JSON.Value)
   }
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq)
 
 -- | How long the token lives: the time between its @iat@ and its @exp@.
 claimsLifetime :: Claims -> NominalDiffTime

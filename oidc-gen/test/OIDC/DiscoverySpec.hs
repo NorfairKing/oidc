@@ -31,6 +31,19 @@ spec = do
         `shouldBe` "https://sts.example.com/.well-known/openid-configuration"
 
   describe "parseDiscovery" $ do
+    -- A document as an issuer serves it, cut down to the fields this library
+    -- reads and enough of the ones beside them that it has to step over some.
+    let aDocument =
+          JSON.object
+            [ ("issuer", "https://sts.example.com"),
+              ("jwks_uri", "https://sts.example.com/keys"),
+              ("authorization_endpoint", "https://sts.example.com/auth"),
+              ("token_endpoint", "https://sts.example.com/token"),
+              ("response_types_supported", JSON.toJSON @[String] ["code"]),
+              ("subject_types_supported", JSON.toJSON @[String] ["public"]),
+              ("id_token_signing_alg_values_supported", JSON.toJSON @[String] ["EdDSA", "RS256"])
+            ]
+
     it "reads the key set url an issuer publishes" $
       parseDiscovery (Issuer "https://sts.example.com") (JSON.encode aDocument)
         `shouldBe` Right
@@ -52,8 +65,14 @@ spec = do
       fmap
         discoveryAlgorithms
         ( parseDiscovery (Issuer "https://sts.example.com") $
-            JSON.encode $
-              documentWith "id_token_signing_alg_values_supported" (JSON.toJSON @[String] ["none", "HS256", "RS256"])
+            JSON.encode $ case aDocument of
+              JSON.Object object ->
+                JSON.Object $
+                  KeyMap.insert
+                    "id_token_signing_alg_values_supported"
+                    (JSON.toJSON @[String] ["none", "HS256", "RS256"])
+                    object
+              other -> other
         )
         `shouldBe` Right [RS256]
 
@@ -61,7 +80,11 @@ spec = do
       fmap
         discoveryAlgorithms
         ( parseDiscovery (Issuer "https://sts.example.com") $
-            JSON.encode (JSON.object [("issuer", "https://sts.example.com"), ("jwks_uri", "https://sts.example.com/keys")])
+            JSON.encode $
+              JSON.object
+                [ ("issuer", "https://sts.example.com"),
+                  ("jwks_uri", "https://sts.example.com/keys")
+                ]
         )
         `shouldBe` Right []
 
@@ -70,28 +93,13 @@ spec = do
         `shouldBe` Left "Unexpected \"not json at all\", expecting JSON value"
 
     it "says what is wrong with a document that names no key set" $
-      parseDiscovery (Issuer "https://sts.example.com") (JSON.encode (JSON.object [("issuer", "https://sts.example.com")]))
+      parseDiscovery
+        (Issuer "https://sts.example.com")
+        (JSON.encode (JSON.object [("issuer", "https://sts.example.com")]))
         `shouldBe` Left "Error in $: key \"jwks_uri\" not found"
 
     it "says what is wrong with a document that names no issuer" $
-      parseDiscovery (Issuer "https://sts.example.com") (JSON.encode (JSON.object [("jwks_uri", "https://sts.example.com/keys")]))
+      parseDiscovery
+        (Issuer "https://sts.example.com")
+        (JSON.encode (JSON.object [("jwks_uri", "https://sts.example.com/keys")]))
         `shouldBe` Left "Error in $: key \"issuer\" not found"
-
--- | A discovery document as an issuer serves it, cut down to the fields this
--- library reads and the ones beside them that it must not trip over.
-aDocument :: JSON.Value
-aDocument =
-  JSON.object
-    [ ("issuer", "https://sts.example.com"),
-      ("jwks_uri", "https://sts.example.com/keys"),
-      ("authorization_endpoint", "https://sts.example.com/auth"),
-      ("token_endpoint", "https://sts.example.com/token"),
-      ("response_types_supported", JSON.toJSON @[String] ["code"]),
-      ("subject_types_supported", JSON.toJSON @[String] ["public"]),
-      ("id_token_signing_alg_values_supported", JSON.toJSON @[String] ["EdDSA", "RS256"])
-    ]
-
-documentWith :: JSON.Key -> JSON.Value -> JSON.Value
-documentWith key value = case aDocument of
-  JSON.Object object -> JSON.Object (KeyMap.insert key value object)
-  other -> other

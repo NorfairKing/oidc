@@ -27,7 +27,7 @@ import OIDC.Algorithm
 -- call equal are still two different issuers as far as this library is
 -- concerned, which is the safe direction to be wrong in.
 newtype Issuer = Issuer {unIssuer :: Text}
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Generic)
 
 instance Validity Issuer
 
@@ -36,7 +36,7 @@ instance Validity Issuer
 -- This is the name the issuer knows the service by, and saying it is what
 -- stops a token minted for one service being replayed against another.
 newtype Audience = Audience {unAudience :: Text}
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Generic)
 
 instance Validity Audience
 
@@ -72,14 +72,13 @@ data Verification = Verification
 
 instance Validity Verification where
   validate verification =
-    mconcat
-      [ genericValidate verification,
-        declare "the clock skew is not negative" $
-          verificationClockSkew verification >= 0,
-        decorate "the maximum token lifetime" $
-          maybe valid (declare "is positive" . (> 0)) $
-            verificationMaxTokenLifetime verification
-      ]
+    genericValidate verification
+      <> declare
+        "the clock skew is not negative"
+        (verificationClockSkew verification >= 0)
+      <> declare
+        "the maximum token lifetime, where there is one, is positive"
+        (all (> 0) (verificationMaxTokenLifetime verification))
 
 -- | The settings that say to accept this issuer's tokens for this audience,
 -- and nothing else about them.

@@ -35,7 +35,7 @@ data Algorithm
   | RS256
   | RS384
   | RS512
-  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
+  deriving (Show, Eq, Enum, Bounded, Generic)
 
 instance Validity Algorithm
 

@@ -71,6 +71,7 @@
         - OIDC.KeySet
         - OIDC.TokenSpec
         - OIDC.KeySetSpec
+        - OIDC.TestUtils
       message: "Avoid lenses; they aren't used in this codebase."
     - name: Data.Text
       as:

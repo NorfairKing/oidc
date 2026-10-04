@@ -4,23 +4,18 @@
 
 module OIDC.TokenSpec (spec) where
 
-import Control.Lens (set, view, (&), (.~), (?~))
+import Control.Lens ((&), (.~), (?~))
 import Control.Monad (void)
 import Crypto.JOSE.Header (HeaderParam (..), kid)
-import Crypto.JOSE.JWK (JWK, KeyMaterialGenParam (..), OKPCrv (..), asPublicKey, genJWK, jwkKid)
 import Crypto.JWT
-  ( ClaimsSet,
-    JWTError (..),
+  ( JWTError (..),
     NumericDate (..),
-    SignedJWT,
-    StringOrURI,
     claimAud,
     claimExp,
     claimIat,
     claimIss,
     claimJti,
     claimSub,
-    emptyClaimsSet,
     encodeCompact,
     newJWSHeader,
     runJOSE,
@@ -32,17 +27,21 @@ import qualified Data.Aeson as JSON
 import qualified Data.Aeson.KeyMap as KeyMap
 import qualified Data.ByteString.Lazy as LB
 import Data.List.NonEmpty (NonEmpty (..))
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.String (fromString)
-import Data.Text (Text)
-import qualified Data.Text as Text
 import Data.Time
 import OIDC
+import OIDC.TestUtils
 import Test.Syd
 
 spec :: Spec
 spec = do
+  -- Rendered rather than compared as a value, so that a test says why a token
+  -- was refused and forces the reason rather than only the shape of it.
+  let refusalFor :: Either Refusal a -> Maybe String
+      refusalFor = \case
+        Left refusal -> Just (renderRefusal refusal)
+        Right _ -> Nothing
+
   describe "unverifiedIssuer" $ do
     it "reads the issuer a token names" $ do
       (key, _) <- generateEdDSAKeyPair
@@ -103,7 +102,14 @@ spec = do
               claimsId = Nothing,
               claimsIssuedAt = aNow,
               claimsExpiry = addUTCTime 300 aNow,
-              claimsAll = aClaimsObject "//example.com/sandbox/s1"
+              claimsAll =
+                Map.fromList
+                  [ ("iss", JSON.String "https://sts.example.com"),
+                    ("aud", JSON.String "the-service"),
+                    ("sub", JSON.String "//example.com/sandbox/s1"),
+                    ("iat", JSON.Number 1791028800),
+                    ("exp", JSON.Number 1791029100)
+                  ]
             }
 
     it "accepts a token signed with the issuer's RSA key" $ do
@@ -250,6 +256,16 @@ spec = do
           aClaimsSet "//example.com/sandbox/s1" & claimIat .~ Nothing
       verifyToken aVerification publicKey aNow token `shouldBe` Left RefusalHasNoLifetime
 
+    -- A token that expires the moment it is issued is degenerate but
+    -- well-formed: it says how long it lives, and that is no time at all.
+    -- Where the line sits is what tells it from the one below.
+    it "accepts a token that expires the moment it was issued" $ do
+      (key, publicKey) <- generateEdDSAKeyPair
+      token <-
+        signToken key EdDSA $
+          aClaimsSet "//example.com/sandbox/s1" & claimExp ?~ NumericDate aNow
+      fmap claimsLifetime (verifyToken aVerification publicKey aNow token) `shouldBe` Right 0
+
     it "refuses a token that expired before it was issued" $ do
       (key, publicKey) <- generateEdDSAKeyPair
       token <-
@@ -316,83 +332,3 @@ spec = do
       tokenKid token `shouldBe` Nothing
 
 -- | The instant every test here checks its tokens against.
---
--- Fixed rather than read from the clock, so that a test which passes does so
--- for the reason it says and not because of when it ran.
-aNow :: UTCTime
-aNow = UTCTime (fromGregorian 2026 10 3) (secondsToDiffTime (12 * 3600))
-
-aKid :: Text
-aKid = "the-key"
-
--- | A text as a registered claim holds it.
-aStringOrURI :: Text -> StringOrURI
-aStringOrURI = fromString . Text.unpack
-
--- | A key pair, and the half of it an issuer publishes, which is all a
--- resource server ever holds.
-generateEdDSAKeyPair :: IO (JWK, JWK)
-generateEdDSAKeyPair = keyPairOf (OKPGenParam Ed25519)
-
-generateRSAKeyPair :: IO (JWK, JWK)
--- 256 bytes, which is a 2048-bit key: jose asks for the size in bytes.
-generateRSAKeyPair = keyPairOf (RSAGenParam 256)
-
-keyPairOf :: KeyMaterialGenParam -> IO (JWK, JWK)
-keyPairOf param = do
-  key <- set jwkKid (Just aKid) <$> genJWK param
-  case view asPublicKey key of
-    Nothing -> expectationFailure "A generated key pair has a public half."
-    Just publicKey -> pure (key, publicKey)
-
-signToken :: JWK -> Algorithm -> ClaimsSet -> IO SignedJWT
-signToken key algorithm claims = do
-  errOrToken <-
-    runJOSE $
-      signClaims
-        key
-        (newJWSHeader ((), algorithmJoseAlg algorithm) & kid ?~ HeaderParam () aKid)
-        claims
-  case errOrToken of
-    Left (err :: JWTError) -> expectationFailure (show err)
-    Right token -> pure token
-
--- | A token an issuer would mint: for this service, now, and about a subject.
-aClaimsSet :: Text -> ClaimsSet
-aClaimsSet subject =
-  emptyClaimsSet
-    & claimIss ?~ aStringOrURI "https://sts.example.com"
-    & claimAud ?~ JWT.Audience [aStringOrURI "the-service"]
-    & claimSub ?~ aStringOrURI subject
-    & claimIat ?~ NumericDate aNow
-    & claimExp ?~ NumericDate (addUTCTime 300 aNow)
-
--- | The payload of 'aClaimsSet', as 'claimsAll' hands it back.
-aClaimsObject :: Text -> Map Text JSON.Value
-aClaimsObject subject =
-  Map.fromList
-    [ ("iss", JSON.String "https://sts.example.com"),
-      ("aud", JSON.String "the-service"),
-      ("sub", JSON.String subject),
-      ("iat", JSON.Number 1791028800),
-      ("exp", JSON.Number 1791029100)
-    ]
-
-aVerification :: Verification
-aVerification =
-  Verification
-    { verificationIssuer = Issuer "https://sts.example.com",
-      verificationAudiences = Audience "the-service" :| [],
-      verificationAlgorithms = EdDSA :| [RS256],
-      verificationMaxTokenLifetime = Just 300,
-      verificationClockSkew = 60
-    }
-
--- | What a token was refused for, as whoever configured the issuer is told it.
---
--- Rendered rather than compared as a value, so that a test says why a token
--- was refused and forces the reason rather than only the shape of it.
-refusalFor :: Either Refusal a -> Maybe String
-refusalFor = \case
-  Left refusal -> Just (renderRefusal refusal)
-  Right _ -> Nothing

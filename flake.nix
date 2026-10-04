@@ -12,6 +12,8 @@
     safe-coloured-text.flake = false;
     sydtest.url = "github:NorfairKing/sydtest";
     sydtest.flake = false;
+    opt-env-conf.url = "github:NorfairKing/opt-env-conf";
+    opt-env-conf.flake = false;
     hopinion.url = "github:NorfairKing/hopinion";
     hopinion.flake = false;
     marginalia.url = "github:NorfairKing/marginalia";
@@ -25,6 +27,7 @@
     , validity
     , safe-coloured-text
     , sydtest
+    , opt-env-conf
     , hopinion
     , marginalia
     }:
@@ -37,6 +40,7 @@
           (import (validity + "/nix/overlay.nix"))
           (import (safe-coloured-text + "/nix/overlay.nix"))
           (import (sydtest + "/nix/overlay.nix"))
+          (import (opt-env-conf + "/nix/overlay.nix"))
           (import (weeder-nix + "/nix/overlay.nix"))
           (import (hopinion + "/nix/overlay.nix"))
         ];

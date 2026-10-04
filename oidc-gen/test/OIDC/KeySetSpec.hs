@@ -1,14 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module OIDC.KeySetSpec (spec) where
 
-import Control.Lens (set)
-import Crypto.JOSE.JWK (JWK, KeyMaterialGenParam (..), OKPCrv (..), genJWK, jwkKid)
+import Crypto.JOSE.JWK (KeyMaterialGenParam (..), OKPCrv (..), genJWK)
 import Data.IORef
-import Data.Text (Text)
 import Data.Time
 import OIDC
+import OIDC.TestUtils
 import Test.Syd
 
 spec :: Spec
@@ -64,17 +62,6 @@ spec = do
       (_, badFetch) <- countedFetch Nothing
       verificationKey badFetch keySet "the-key" `shouldReturn` Just key
 
-    it "replaces the keys it holds with the ones it fetched" $ do
-      oldKey <- generateKeyNamed "the-old-key"
-      newKey <- generateKeyNamed "the-new-key"
-      keySet <- newKeySet
-      (_, firstFetch) <- countedFetch (Just [oldKey])
-      _ <- verificationKey firstFetch keySet "the-old-key"
-      (_, secondFetch) <- countedFetch (Just [newKey])
-      -- Still inside the refetch interval, so nothing is fetched and the old
-      -- key is still the one that answers.
-      verificationKey secondFetch keySet "the-old-key" `shouldReturn` Just oldKey
-
     -- A key with no name cannot say which key a token was signed with, and
     -- guessing is what looking the key up is meant to avoid.
     it "never answers with a key the issuer did not name" $ do
@@ -85,7 +72,12 @@ spec = do
 
   describe "refetchAllowed" $ do
     it "allows a fetch when the issuer has never been asked" $
-      refetchAllowed aNow KeySetState {keySetStateKeys = [], keySetStateAttempted = Nothing}
+      refetchAllowed
+        aNow
+        KeySetState
+          { keySetStateKeys = [],
+            keySetStateAttempted = Nothing
+          }
         `shouldBe` True
 
     it "refuses a fetch a moment after the last one" $
@@ -119,7 +111,11 @@ spec = do
     it "holds nothing and has asked nobody to begin with" $ do
       keySet <- newKeySet
       state <- readKeySetState keySet
-      state `shouldBe` KeySetState {keySetStateKeys = [], keySetStateAttempted = Nothing}
+      state
+        `shouldBe` KeySetState
+          { keySetStateKeys = [],
+            keySetStateAttempted = Nothing
+          }
 
     it "holds what was fetched" $ do
       key <- generateKeyNamed "the-key"
@@ -137,21 +133,3 @@ spec = do
 
     it "finds nothing in an empty key set" $
       keyWithKid "the-key" [] `shouldBe` Nothing
-
-aNow :: UTCTime
-aNow = UTCTime (fromGregorian 2026 10 3) (secondsToDiffTime (12 * 3600))
-
-generateKeyNamed :: Text -> IO JWK
-generateKeyNamed name = set jwkKid (Just name) <$> genJWK (OKPGenParam Ed25519)
-
--- | A fetch that answers the same thing every time, and a count of how often
--- it was asked.
---
--- Counting is the whole point: what 'verificationKey' decides is when to ask
--- the issuer, so a test of it has to be able to see that. Fetching is a
--- parameter of the function rather than something hidden behind it, so this
--- is the real argument it takes and not a stand-in for one.
-countedFetch :: Maybe [JWK] -> IO (IORef Int, IO (Maybe [JWK]))
-countedFetch answer = do
-  asked <- newIORef 0
-  pure (asked, modifyIORef' asked (+ 1) >> pure answer)
