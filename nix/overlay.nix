@@ -5,7 +5,6 @@ with final.haskell.lib;
   haskellPackages = prev.haskellPackages.override (old: {
     overrides = composeExtensions (old.overrides or (_: _: { })) (self: _:
       let
-        # These are duplicated in stack.yaml.
         oidcPkg = name:
           buildStrictly (overrideCabal
             (self.callPackage (../${name}) { })

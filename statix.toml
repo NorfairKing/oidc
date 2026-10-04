@@ -1,8 +1,7 @@
 ignore = [
-  '.direnv',
-  ".stack-work",
+'.direnv',
 ]
 disabled = [
-  "eta_reduction",
-  "manual_inherit_from",
+"eta_reduction",
+"manual_inherit_from",
 ]
