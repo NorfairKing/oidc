@@ -21,11 +21,17 @@ module OIDC.KeySet
     refetchAllowed,
     minimumRefetchInterval,
     keyWithKid,
+    parseJWKSet,
+
+    -- * Re-exported so that holding a key does not mean depending on jose
+    JWK,
   )
 where
 
 import Control.Lens (view)
-import Crypto.JOSE.JWK (JWK, jwkKid)
+import Crypto.JOSE.JWK (JWK, JWKSet (..), jwkKid)
+import qualified Data.Aeson as JSON
+import qualified Data.ByteString.Lazy as LB
 import Data.List (find)
 import Data.Text (Text)
 import Data.Time
@@ -121,3 +127,12 @@ refetchAllowed now state = case keySetStateAttempted state of
 -- looking the key up is meant to avoid.
 keyWithKid :: Text -> [JWK] -> Maybe JWK
 keyWithKid kid = find ((== Just kid) . view jwkKid)
+
+-- | Read the key set an issuer publishes.
+--
+-- Here so that fetching one does not mean depending on jose to read the
+-- answer. The fetch itself is still the caller's.
+parseJWKSet :: LB.ByteString -> Either String [JWK]
+parseJWKSet body = case JSON.eitherDecode body of
+  Left err -> Left err
+  Right (JWKSet keys) -> Right keys

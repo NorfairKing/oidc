@@ -17,7 +17,6 @@ module OIDC.Federation
   )
 where
 
-import Crypto.JOSE.JWK (JWK)
 import qualified Data.ByteString as SB
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map

@@ -81,6 +81,13 @@
       checks.${system} = {
         library = self.packages.${system}.default;
         tests = pkgs.haskellPackages.oidc-gen;
+        # Everything else signs its own tokens with keys it generated. This
+        # is the only check that says a real issuer's documents, keys and
+        # tokens are shaped the way the library expects.
+        e2e-test = pkgs.callPackage ./nix/e2e-test.nix {
+          inherit (pkgs.testers) runNixOSTest;
+          oidc-e2e = pkgs.haskell.lib.justStaticExecutables pkgs.haskellPackages.oidc-e2e;
+        };
         shell = self.devShells.${system}.default;
         # Mutation testing over the one instrumented library. The test suite
         # lives in oidc-gen, so that package supplies the coverage rather than

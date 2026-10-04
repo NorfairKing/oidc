@@ -21,7 +21,7 @@ where
 
 import Control.Lens (set, view, (&), (?~))
 import Crypto.JOSE.Header (HeaderParam (..), kid)
-import Crypto.JOSE.JWK (JWK, KeyMaterialGenParam (..), OKPCrv (..), asPublicKey, genJWK, jwkKid)
+import Crypto.JOSE.JWK (KeyMaterialGenParam (..), OKPCrv (..), asPublicKey, genJWK, jwkKid)
 import Crypto.JWT
   ( ClaimsSet,
     JWTError,

@@ -2,7 +2,8 @@
 
 module OIDC.KeySetSpec (spec) where
 
-import Crypto.JOSE.JWK (KeyMaterialGenParam (..), OKPCrv (..), genJWK)
+import Crypto.JOSE.JWK (JWKSet (..), KeyMaterialGenParam (..), OKPCrv (..), genJWK)
+import qualified Data.Aeson as JSON
 import Data.IORef
 import Data.Time
 import OIDC
@@ -124,6 +125,29 @@ spec = do
       _ <- verificationKey fetch keySet "the-key"
       state <- readKeySetState keySet
       keySetStateKeys state `shouldBe` [key]
+
+  describe "parseJWKSet" $ do
+    it "reads back a key set as an issuer publishes it" $ do
+      key <- generateKeyNamed "the-key"
+      parseJWKSet (JSON.encode (JWKSet [key])) `shouldBe` Right [key]
+
+    -- An issuer that has rotated publishes the old key beside the new one,
+    -- so reading only the first would stop every token in flight.
+    it "reads back every key in the set" $ do
+      old <- generateKeyNamed "the-old-key"
+      new <- generateKeyNamed "the-new-key"
+      parseJWKSet (JSON.encode (JWKSet [old, new])) `shouldBe` Right [old, new]
+
+    it "reads an issuer that publishes no keys at all" $
+      parseJWKSet (JSON.encode (JWKSet [])) `shouldBe` Right []
+
+    it "says what is wrong with something that is not a key set" $
+      parseJWKSet (JSON.encode (JSON.object [("keys", JSON.String "not a list")]))
+        `shouldBe` Left "Error in $.keys: parsing [] failed, expected Array, but encountered String"
+
+    it "says what is wrong with something that is not JSON" $
+      parseJWKSet "not json at all"
+        `shouldBe` Left "Unexpected \"not json at all\", expecting JSON value"
 
   describe "keyWithKid" $ do
     it "finds the key published under that name" $ do
