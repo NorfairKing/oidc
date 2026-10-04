@@ -16,6 +16,7 @@
     opt-env-conf.flake = false;
     hopinion.url = "github:NorfairKing/hopinion";
     hopinion.flake = false;
+    release-to-hackage.url = "github:NorfairKing/release-to-hackage";
     marginalia.url = "github:NorfairKing/marginalia";
   };
 
@@ -30,6 +31,7 @@
     , opt-env-conf
     , hopinion
     , marginalia
+    , release-to-hackage
     }:
     let
       system = "x86_64-linux";
@@ -66,6 +68,12 @@
       overlays.default = import ./nix/overlay.nix;
       packages.${system} = {
         default = pkgs.haskellPackages.oidc;
+        # Uploads exactly those packages whose version is not on Hackage yet,
+        # so a push that bumps no version releases nothing. Run from master
+        # by the deploy job in nix-ci.nix.
+        release-to-hackage = release-to-hackage.lib.${system}.makeHackageRelease {
+          packages = pkgs.haskellPackages.oidcPackages;
+        };
       };
       checks.${system} = {
         library = self.packages.${system}.default;
@@ -139,7 +147,7 @@
               name = "marginalia";
               description = "Show [check] annotations near changed lines";
               package = marginalia.packages.${system}.default;
-              entry = "${marginalia.packages.${system}.default}/bin/marginalia --base master";
+              entry = "${marginalia.packages.${system}.default}/bin/marginalia --base development";
               language = "system";
               pass_filenames = false;
               stages = [ "pre-commit" ];
