@@ -71,6 +71,7 @@ e2eSpec man E2ESettings {..} = do
       tokenFor client =
         fetchIDToken
           man
+          e2eSettingGrant
           e2eSettingIssuer
           client
           e2eSettingRedirectURI

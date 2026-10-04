@@ -28,6 +28,7 @@ import Network.HTTP.Client
 import Network.HTTP.Types (hLocation, statusCode)
 import Network.URI (parseURIReference, relativeTo)
 import OIDC
+import OIDC.E2E.OptParse (E2EGrant (..), renderE2EGrant)
 
 -- | The document an issuer publishes about itself, as it served it.
 --
@@ -46,15 +47,16 @@ fetchJWKSet man url = do
     Left _ -> pure Nothing
     Right keys -> pure (Just keys)
 
--- | A token the issuer minted for this client, about the workload that signed
--- in.
+-- | A token the issuer minted for this client, about the workload whose
+-- credentials it checked.
 --
--- The authorization code flow, because it is the only one dex still offers,
--- and the workload signs in with a password the issuer holds the hash of.
--- What comes out is the same either way: a short-lived JWT the issuer signed,
--- naming this client as its audience.
+-- Which grant to use is the issuer's business rather than the library's: dex
+-- offers only the authorization code flow, Keycloak also takes the
+-- credentials straight. What comes out either way is a short-lived JWT the
+-- issuer signed, naming this client as its audience.
 fetchIDToken ::
   Manager ->
+  E2EGrant ->
   -- | Issuer
   Text ->
   -- | Client id and secret
@@ -64,29 +66,55 @@ fetchIDToken ::
   -- | Username and password
   (Text, Text) ->
   IO SB.ByteString
-fetchIDToken man issuer (clientId, clientSecret) redirectURI credentials = do
+fetchIDToken man grant issuer client@(clientId, clientSecret) redirectURI credentials = do
   tokenEndpoint <- discoverEndpoint man issuer "token_endpoint"
-  authorizationEndpoint <- discoverEndpoint man issuer "authorization_endpoint"
-  code <- fetchAuthorizationCode man authorizationEndpoint clientId redirectURI credentials
+  body <- case grant of
+    GrantDirectAccess ->
+      pure
+        [ ("grant_type", "password"),
+          ("username", TE.encodeUtf8 (fst credentials)),
+          ("password", TE.encodeUtf8 (snd credentials)),
+          -- Without this the issuer answers with an access token and no id
+          -- token, and an id token is what names this client as its
+          -- audience.
+          ("scope", "openid")
+        ]
+    GrantAuthorizationCode -> do
+      authorizationEndpoint <- discoverEndpoint man issuer "authorization_endpoint"
+      code <- fetchAuthorizationCode man authorizationEndpoint clientId redirectURI credentials
+      pure
+        [ ("grant_type", "authorization_code"),
+          ("code", TE.encodeUtf8 code),
+          ("redirect_uri", TE.encodeUtf8 redirectURI)
+        ]
   request <- parseRequest (Text.unpack tokenEndpoint)
   response <-
     httpLbs
       ( applyBasicAuth
           (TE.encodeUtf8 clientId)
           (TE.encodeUtf8 clientSecret)
-          ( urlEncodedBody
-              [ ("grant_type", "authorization_code"),
-                ("code", TE.encodeUtf8 code),
-                ("redirect_uri", TE.encodeUtf8 redirectURI)
-              ]
-              request
-          )
+          (urlEncodedBody body request)
       )
       man
   case JSON.eitherDecode (responseBody response) of
-    Left err -> fail (unwords ["The issuer's answer is not a token response:", err])
+    Left err ->
+      fail $
+        unwords
+          [ "The issuer's answer to a",
+            renderE2EGrant grant,
+            "request as",
+            concat [show (fst client), ":"],
+            err
+          ]
     Right value -> case parseEither (JSON.withObject "token response" (JSON..: "id_token")) value of
-      Left err -> fail (unwords ["The issuer's token response holds no id token:", err])
+      Left err ->
+        fail $
+          unwords
+            [ "The issuer's token response holds no id token:",
+              concat [err, ","],
+              "in",
+              show (LB.toStrict (responseBody response))
+            ]
       Right idToken -> pure (TE.encodeUtf8 idToken)
 
 -- | Read one endpoint out of the issuer's discovery document.

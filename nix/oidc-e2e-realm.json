@@ -1,0 +1,46 @@
+{
+  "realm": "oidc-e2e",
+  "enabled": true,
+  "accessTokenLifespan": 300,
+  "sslRequired": "none",
+  "clients": [
+    {
+      "clientId": "oidc-e2e",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "fullScopeAllowed": true,
+      "defaultClientScopes": ["acr", "basic", "email", "profile", "roles", "web-origins"],
+      "secret": "oidc-e2e-secret",
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": false,
+      "redirectUris": ["http://127.0.0.1:1/callback"]
+    },
+    {
+      "clientId": "somebody-else",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "fullScopeAllowed": true,
+      "defaultClientScopes": ["acr", "basic", "email", "profile", "roles", "web-origins"],
+      "secret": "somebody-else-secret",
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": false,
+      "redirectUris": ["http://127.0.0.1:1/callback"]
+    }
+  ],
+  "users": [
+    {
+      "username": "workload",
+      "email": "workload@example.com",
+      "firstName": "Work",
+      "lastName": "Load",
+      "enabled": true,
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        { "type": "password", "temporary": false, "value": "workload-password" }
+      ]
+    }
+  ]
+}

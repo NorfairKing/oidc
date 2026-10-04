@@ -1,12 +1,17 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module OIDC.E2E.OptParse
   ( getE2ESettings,
     E2ESettings (..),
+    E2EGrant (..),
+    parseE2EGrant,
+    renderE2EGrant,
   )
 where
 
+import Data.List (find)
 import Data.Text (Text)
 import OptEnvConf
 import Paths_oidc_e2e (version)
@@ -33,8 +38,32 @@ data E2ESettings = E2ESettings
     -- request to it.
     e2eSettingRedirectURI :: !Text,
     e2eSettingUsername :: !Text,
-    e2eSettingPassword :: !Text
+    e2eSettingPassword :: !Text,
+    -- | How to ask this issuer for a token.
+    --
+    -- Issuers differ in which grants they still offer, and this is about the
+    -- issuers rather than about the library: what comes out either way is a
+    -- JWT the issuer signed.
+    e2eSettingGrant :: !E2EGrant
   }
+
+-- | The ways the issuers on the test network will hand out a token.
+data E2EGrant
+  = -- | Sign in at the issuer's own login page and swap the code it
+    -- redirects with. The only one dex still offers.
+    GrantAuthorizationCode
+  | -- | Post the credentials straight to the token endpoint. Keycloak calls
+    -- this direct access grants; dex dropped it.
+    GrantDirectAccess
+  deriving (Enum, Bounded)
+
+renderE2EGrant :: E2EGrant -> String
+renderE2EGrant = \case
+  GrantAuthorizationCode -> "authorization-code"
+  GrantDirectAccess -> "direct-access"
+
+parseE2EGrant :: String -> Maybe E2EGrant
+parseE2EGrant rendered = find ((== rendered) . renderE2EGrant) [minBound .. maxBound]
 
 instance HasParser E2ESettings where
   settingsParser = parseE2ESettings
@@ -96,5 +125,14 @@ parseE2ESettings = subEnv_ "oidc-e2e" $ withoutConfig $ do
         reader str,
         name "password",
         metavar "PASSWORD"
+      ]
+  e2eSettingGrant <-
+    setting
+      [ help "How to ask this issuer for a token",
+        reader (maybeReader parseE2EGrant),
+        option,
+        long "grant",
+        env "GRANT",
+        metavar "GRANT"
       ]
   pure E2ESettings {..}
