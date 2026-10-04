@@ -18,5 +18,6 @@ mkDerivation {
   testToolDepends = [ sydtest-discover ];
   homepage = "https://github.com/NorfairKing/oidc#readme";
   description = "Generators and test utilities for oidc";
-  license = lib.licenses.mit;
+  license = lib.licenses.unfree;
+  hydraPlatforms = lib.platforms.none;
 }

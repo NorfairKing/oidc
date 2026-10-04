@@ -12,5 +12,6 @@ mkDerivation {
   ];
   homepage = "https://github.com/NorfairKing/oidc#readme";
   description = "Accept tokens from an OpenID Connect issuer";
-  license = lib.licenses.mit;
+  license = lib.licenses.unfree;
+  hydraPlatforms = lib.platforms.none;
 }
