@@ -5,13 +5,27 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           oidc-gen
-version:        0.0.0
-synopsis:       Generators and tests for oidc
+version:        0.0.0.0
+synopsis:       Generators and test utilities for oidc
+description:    Generators and test utilities for <https://hackage.haskell.org/package/oidc oidc>.
+                .
+                For more info, see <https://github.com/NorfairKing/oidc the readme>.
 category:       Web
+homepage:       https://github.com/NorfairKing/oidc#readme
+bug-reports:    https://github.com/NorfairKing/oidc/issues
 author:         Tom Sydney Kerckhove
 maintainer:     syd@cs-syd.eu
+copyright:      Copyright (c) 2026 Tom Sydney Kerckhove
 license:        MIT
+license-file:   LICENSE
 build-type:     Simple
+extra-source-files:
+    LICENSE
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/NorfairKing/oidc
 
 library
   exposed-modules:
@@ -24,7 +38,7 @@ library
   ghc-options: -Wall
   build-depends:
       QuickCheck
-    , base
+    , base >=4.7 && <5
     , genvalidity
     , genvalidity-text
     , genvalidity-time
@@ -54,7 +68,7 @@ test-suite oidc-test
       sydtest-discover:sydtest-discover
   build-depends:
       aeson
-    , base
+    , base >=4.7 && <5
     , bytestring
     , containers
     , genvalidity-sydtest

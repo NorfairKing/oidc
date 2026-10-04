@@ -5,13 +5,27 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           oidc
-version:        0.0.0
+version:        0.0.0.0
 synopsis:       Accept tokens from an OpenID Connect issuer
+description:    The resource server's half of OpenID Connect: something presents a token it got from an issuer, and this says whether to believe it.
+                .
+                For more info, see <https://github.com/NorfairKing/oidc the readme>.
 category:       Web
+homepage:       https://github.com/NorfairKing/oidc#readme
+bug-reports:    https://github.com/NorfairKing/oidc/issues
 author:         Tom Sydney Kerckhove
 maintainer:     syd@cs-syd.eu
+copyright:      Copyright (c) 2026 Tom Sydney Kerckhove
 license:        MIT
+license-file:   LICENSE
 build-type:     Simple
+extra-source-files:
+    LICENSE
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/NorfairKing/oidc
 
 library
   exposed-modules:
@@ -29,7 +43,7 @@ library
   ghc-options: -Wall
   build-depends:
       aeson
-    , base
+    , base >=4.7 && <5
     , bytestring
     , containers
     , jose

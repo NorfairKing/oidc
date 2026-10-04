@@ -1,13 +1,25 @@
 name: oidc-gen
-version: 0.0.0
-synopsis: Generators and tests for oidc
+version: 0.0.0.0
+github: NorfairKing/oidc
+synopsis: Generators and test utilities for oidc
+description: ! 'Generators and test utilities for <https://hackage.haskell.org/package/oidc
+  oidc>.
+
+
+  For more info, see <https://github.com/NorfairKing/oidc the readme>.'
 category: Web
 author: Tom Sydney Kerckhove
 maintainer: syd@cs-syd.eu
+copyright: Copyright (c) 2026 Tom Sydney Kerckhove
 license: MIT
+license-file: LICENSE
+
+extra-source-files:
+- LICENSE
+- CHANGELOG.md
 
 dependencies:
-- base
+- base >= 4.7 && < 5
 
 library:
   source-dirs: src/

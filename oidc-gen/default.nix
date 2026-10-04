@@ -5,7 +5,7 @@
 }:
 mkDerivation {
   pname = "oidc-gen";
-  version = "0.0.0";
+  version = "0.0.0.0";
   src = ./.;
   libraryHaskellDepends = [
     base genvalidity genvalidity-text genvalidity-time jose lens oidc
@@ -16,6 +16,7 @@ mkDerivation {
     sydtest text time
   ];
   testToolDepends = [ sydtest-discover ];
-  description = "Generators and tests for oidc";
+  homepage = "https://github.com/NorfairKing/oidc#readme";
+  description = "Generators and test utilities for oidc";
   license = lib.licenses.mit;
 }

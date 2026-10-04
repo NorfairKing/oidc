@@ -1,13 +1,25 @@
 name: oidc
-version: 0.0.0
+version: 0.0.0.0
+github: NorfairKing/oidc
 synopsis: Accept tokens from an OpenID Connect issuer
+description: ! 'The resource server''s half of OpenID Connect: something presents a token
+  it got from an issuer, and this says whether to believe it.
+
+
+  For more info, see <https://github.com/NorfairKing/oidc the readme>.'
 category: Web
 author: Tom Sydney Kerckhove
 maintainer: syd@cs-syd.eu
+copyright: Copyright (c) 2026 Tom Sydney Kerckhove
 license: MIT
+license-file: LICENSE
+
+extra-source-files:
+- LICENSE
+- CHANGELOG.md
 
 dependencies:
-- base
+- base >= 4.7 && < 5
 
 library:
   source-dirs: src/
