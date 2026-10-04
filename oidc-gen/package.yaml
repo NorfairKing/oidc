@@ -1,0 +1,54 @@
+name: oidc-gen
+version: 0.0.0
+synopsis: Generators and tests for oidc
+category: Web
+author: Tom Sydney Kerckhove
+maintainer: syd@cs-syd.eu
+license: MIT
+
+extra-source-files:
+- test_resources/**/*
+
+dependencies:
+- base
+
+library:
+  source-dirs: src/
+  ghc-options: -Wall
+  dependencies:
+  - QuickCheck
+  - containers
+  - genvalidity
+  - genvalidity-text
+  - genvalidity-time
+  - oidc
+  - text
+  - time
+
+tests:
+  oidc-test:
+    main: Spec.hs
+    source-dirs: test/
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -Wall
+    dependencies:
+    - QuickCheck
+    - aeson
+    - bytestring
+    - containers
+    - genvalidity-sydtest
+
+
+    - jose
+    - lens
+    - oidc
+    - oidc-gen
+    - sydtest
+    - text
+    - time
+    - unliftio
+
+

@@ -1,0 +1,11 @@
+# Mutation-plugin config for oidc.
+#
+# Schema: Test.Syd.Mutation.Plugin.OptParse.MutationPluginConfig in the sydtest
+# repo. Wired into nix via the 'configFile' argument of sydtest.mutationCheck
+# in flake.nix.
+#
+# Everything suppressed here is suppressed for every call site at once, so it
+# is only for mutants that no test could ever kill. A mutant that a test could
+# kill belongs in a test, not in this file.
+
+debug: true

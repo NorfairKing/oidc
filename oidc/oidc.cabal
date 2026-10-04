@@ -1,0 +1,43 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.38.3.
+--
+-- see: https://github.com/sol/hpack
+
+name:           oidc
+version:        0.0.0
+synopsis:       Accept tokens from an OpenID Connect issuer
+category:       Web
+author:         Tom Sydney Kerckhove
+maintainer:     syd@cs-syd.eu
+license:        MIT
+build-type:     Simple
+
+library
+  exposed-modules:
+      OIDC
+      OIDC.Algorithm
+      OIDC.Discovery
+      OIDC.KeySet
+      OIDC.Provider
+      OIDC.Token
+  other-modules:
+      Paths_oidc
+  hs-source-dirs:
+      src/
+  ghc-options: -Wall
+  build-depends:
+      aeson
+    , base
+    , bytestring
+    , containers
+    , jose
+    , lens
+    , memory
+    , text
+    , time
+    , unliftio
+    , validity
+    , validity-text
+    , validity-time
+  default-language: Haskell2010

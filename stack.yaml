@@ -1,0 +1,41 @@
+resolver: lts-24.38
+packages:
+- oidc
+- oidc-gen
+
+# These are duplicated in nix/overlay.nix.
+ghc-options:
+  "$locals": -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wpartial-fields -Widentities -Wredundant-constraints -Wcpp-undef -O0 -Wunused-packages
+
+extra-deps:
+- github: NorfairKing/sydtest
+  commit: 4c0b2699e4a3ded86dad312086f553ef45969820
+  subdirs:
+    - sydtest
+    - sydtest-discover
+    - sydtest-mutation-runtime
+
+- github: NorfairKing/validity
+  commit: 456dfd9e4ef7906d33ce70f3f5fdf204a12cce8e
+  subdirs:
+    - genvalidity
+    - genvalidity-containers
+    - genvalidity-sydtest
+    - genvalidity-text
+    - genvalidity-time
+    - validity
+    - validity-containers
+    - validity-text
+    - validity-time
+
+- github: NorfairKing/safe-coloured-text
+  commit: 5d1187b7873a8a1e397245c7c0c6d9ab88765d67
+  subdirs:
+    - safe-coloured-text
+    - safe-coloured-text-layout
+    - safe-coloured-text-terminfo
+
+system-ghc: true
+nix:
+  enable: false # We enter the shell manually.
+with-hpack: hpack

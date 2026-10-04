@@ -1,0 +1,27 @@
+name: oidc
+version: 0.0.0
+synopsis: Accept tokens from an OpenID Connect issuer
+category: Web
+author: Tom Sydney Kerckhove
+maintainer: syd@cs-syd.eu
+license: MIT
+
+dependencies:
+- base
+
+library:
+  source-dirs: src/
+  ghc-options: -Wall
+  dependencies:
+  - aeson
+  - bytestring
+  - containers
+  - jose
+  - lens
+  - memory
+  - text
+  - time
+  - unliftio
+  - validity
+  - validity-text
+  - validity-time
