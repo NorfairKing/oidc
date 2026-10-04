@@ -12,7 +12,6 @@ mkDerivation {
     opt-env-conf sydtest text time
   ];
   executableHaskellDepends = [ base ];
-  homepage = "https://github.com/NorfairKing/oidc#readme";
   description = "End-to-end tests for oidc against a real issuer";
   license = lib.licenses.unfree;
   hydraPlatforms = lib.platforms.none;

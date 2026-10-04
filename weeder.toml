@@ -2,7 +2,6 @@ unused-types = true
 type-class-roots = false
 roots = [
   "^Main.main$",
-  "^Main.spec$",
   "^Paths_.*",
 ]
 root-instances = [

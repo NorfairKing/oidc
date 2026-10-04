@@ -74,8 +74,12 @@
         # Uploads exactly those packages whose version is not on Hackage yet,
         # so a push that bumps no version releases nothing. Run from master
         # by the deploy job in nix-ci.nix.
+        #
+        # oidc-e2e is left out: it is the driver the NixOS test runs, it is
+        # of no use to anybody who is not running that test, and nothing
+        # depends on it.
         release-to-hackage = release-to-hackage.lib.${system}.makeHackageRelease {
-          packages = pkgs.haskellPackages.oidcPackages;
+          packages = removeAttrs pkgs.haskellPackages.oidcPackages [ "oidc-e2e" ];
         };
       };
       checks.${system} = {

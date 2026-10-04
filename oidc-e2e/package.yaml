@@ -1,24 +1,12 @@
 name: oidc-e2e
 version: 0.0.0.0
-github: NorfairKing/oidc
 synopsis: End-to-end tests for oidc against a real issuer
-description: ! 'Not a library: the driver that the NixOS test in this repository runs
-  against a real OpenID Connect issuer.
-
-
-  For more info, see <https://github.com/NorfairKing/oidc the readme>.'
-category: Web
 author: Tom Sydney Kerckhove
 maintainer: syd@cs-syd.eu
-copyright: Copyright (c) 2026 Tom Sydney Kerckhove
 license: AllRightsReserved
-license-file: LICENSE
-
-extra-source-files:
-- LICENSE
 
 dependencies:
-- base >= 4.7 && < 5
+- base
 
 library:
   source-dirs: src/
