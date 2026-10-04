@@ -12,15 +12,15 @@ import Test.Syd.Validity
 spec :: Spec
 spec = do
   genValidSpec @Issuer
-  genValidSpec @Audience
+  genValidSpec @TokenAudience
   genValidSpec @Verification
 
   describe "verificationFor" $ do
     it "accepts only the issuer and audience it was given" $
-      verificationFor (Issuer "https://sts.example.com") (Audience "the-service") (EdDSA :| [])
+      verificationFor (Issuer "https://sts.example.com") (TokenAudience "the-service") (EdDSA :| [])
         `shouldBe` Verification
           { verificationIssuer = Issuer "https://sts.example.com",
-            verificationAudiences = Audience "the-service" :| [],
+            verificationAudiences = TokenAudience "the-service" :| [],
             verificationAlgorithms = EdDSA :| [],
             verificationMaxTokenLifetime = Nothing,
             verificationClockSkew = 0
@@ -37,7 +37,7 @@ spec = do
   -- configuration anybody can hold. Asserted here because generating only
   -- valid values never asks whether an invalid one is caught.
   describe "Validity Verification" $ do
-    let aVerification = verificationFor (Issuer "i") (Audience "a") (EdDSA :| [])
+    let aVerification = verificationFor (Issuer "i") (TokenAudience "a") (EdDSA :| [])
 
     it "is invalid with a negative clock skew" $
       shouldBeInvalid aVerification {verificationClockSkew = -1}

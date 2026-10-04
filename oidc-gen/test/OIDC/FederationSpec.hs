@@ -31,7 +31,7 @@ spec = do
         Refused _ -> Nothing
 
   describe "verificationsByIssuer" $ do
-    let forIssuer issuer = verificationFor (Issuer issuer) (Audience "a") (EdDSA :| [])
+    let forIssuer issuer = verificationFor (Issuer issuer) (TokenAudience "a") (EdDSA :| [])
 
     it "keys the settings by the issuer each is about" $
       verificationsByIssuer [forIssuer "one", forIssuer "two"]
@@ -52,14 +52,16 @@ spec = do
         `shouldBe` Left (Issuer "one")
 
   describe "authenticate" $ do
-    let verifications = Map.singleton (verificationIssuer aVerification) aVerification
+    let federationWith :: IO (Maybe [JWK]) -> IO (Federation IO)
+        federationWith fetch =
+          newFederation (Map.singleton (verificationIssuer aVerification) (aVerification, fetch))
 
     it "accepts a token one of its issuers signed" $ do
       (key, publicKey) <- generateEdDSAKeyPair
       token <- signToken key EdDSA (aClaimsSet "//example.com/sandbox/s1")
-      federation <- newFederation verifications
       (_, fetch) <- countedFetch (Just [publicKey])
-      outcome <- authenticate (const fetch) federation aNow (LB.toStrict (encodeCompact token))
+      federation <- federationWith fetch
+      outcome <- authenticate federation aNow (LB.toStrict (encodeCompact token))
       fmap claimsSubject (acceptedClaims outcome) `shouldBe` Just "//example.com/sandbox/s1"
 
     -- A service that answered anything else here would be telling whoever
@@ -70,43 +72,42 @@ spec = do
         signToken key EdDSA $
           aClaimsSet "//example.com/sandbox/s1"
             & claimIss ?~ aStringOrURI "https://elsewhere.example.com"
-      federation <- newFederation verifications
       (asked, fetch) <- countedFetch (Just [publicKey])
-      outcome <- authenticate (const fetch) federation aNow (LB.toStrict (encodeCompact token))
+      federation <- federationWith fetch
+      outcome <- authenticate federation aNow (LB.toStrict (encodeCompact token))
       outcome `shouldBe` NotFederated
       -- Nothing was checked, so nothing was fetched: an unknown issuer cannot
       -- be made to cost a request.
       readIORef asked `shouldReturn` 0
 
     it "says nothing about something that is not a token" $ do
-      federation <- newFederation verifications
       (_, fetch) <- countedFetch (Just [])
-      authenticate (const fetch) federation aNow "not a token at all"
+      federation <- federationWith fetch
+      authenticate federation aNow "not a token at all"
         `shouldReturn` NotFederated
 
     it "says nothing at all when it federates with nobody" $ do
-      (key, publicKey) <- generateEdDSAKeyPair
+      (key, _) <- generateEdDSAKeyPair
       token <- signToken key EdDSA (aClaimsSet "//example.com/sandbox/s1")
       federation <- newFederation Map.empty
-      (_, fetch) <- countedFetch (Just [publicKey])
-      authenticate (const fetch) federation aNow (LB.toStrict (encodeCompact token))
+      authenticate federation aNow (LB.toStrict (encodeCompact token))
         `shouldReturn` NotFederated
 
     it "refuses a token naming a key its issuer does not publish" $ do
       (key, _) <- generateEdDSAKeyPair
       other <- generateKeyNamed "another-key"
       token <- signToken key EdDSA (aClaimsSet "//example.com/sandbox/s1")
-      federation <- newFederation verifications
       (_, fetch) <- countedFetch (Just [other])
-      outcome <- authenticate (const fetch) federation aNow (LB.toStrict (encodeCompact token))
+      federation <- federationWith fetch
+      outcome <- authenticate federation aNow (LB.toStrict (encodeCompact token))
       outcome `shouldBe` Refused (RefusalNamesUnknownKey "the-key")
 
     it "refuses a token when its issuer cannot be reached for keys" $ do
       (key, _) <- generateEdDSAKeyPair
       token <- signToken key EdDSA (aClaimsSet "//example.com/sandbox/s1")
-      federation <- newFederation verifications
       (_, fetch) <- countedFetch Nothing
-      outcome <- authenticate (const fetch) federation aNow (LB.toStrict (encodeCompact token))
+      federation <- federationWith fetch
+      outcome <- authenticate federation aNow (LB.toStrict (encodeCompact token))
       outcome `shouldBe` Refused (RefusalNamesUnknownKey "the-key")
 
     it "refuses a token its issuer signed but that says nothing valid" $ do
@@ -114,9 +115,9 @@ spec = do
       token <-
         signToken key EdDSA $
           aClaimsSet "//example.com/sandbox/s1" & claimExp .~ Nothing
-      federation <- newFederation verifications
       (_, fetch) <- countedFetch (Just [publicKey])
-      outcome <- authenticate (const fetch) federation aNow (LB.toStrict (encodeCompact token))
+      federation <- federationWith fetch
+      outcome <- authenticate federation aNow (LB.toStrict (encodeCompact token))
       outcome `shouldBe` Refused RefusalHasNoLifetime
 
     -- The payload says which issuer to check against, and the rest of the
@@ -127,11 +128,10 @@ spec = do
       payload <- case Text.splitOn "." (TE.decodeUtf8Lenient (LB.toStrict (encodeCompact token))) of
         [_, payload, _] -> pure payload
         _ -> expectationFailure "A signed token has three segments."
-      federation <- newFederation verifications
       (_, fetch) <- countedFetch (Just [publicKey])
+      federation <- federationWith fetch
       outcome <-
         authenticate
-          (const fetch)
           federation
           aNow
           (TE.encodeUtf8 (Text.intercalate "." ["!!!", payload, "!!!"]))
@@ -142,18 +142,18 @@ spec = do
     it "refuses an expired token its issuer signed" $ do
       (key, publicKey) <- generateEdDSAKeyPair
       token <- signToken key EdDSA (aClaimsSet "//example.com/sandbox/s1")
-      federation <- newFederation verifications
       (_, fetch) <- countedFetch (Just [publicKey])
+      federation <- federationWith fetch
       outcome <-
-        authenticate (const fetch) federation (addUTCTime 3600 aNow) (LB.toStrict (encodeCompact token))
+        authenticate federation (addUTCTime 3600 aNow) (LB.toStrict (encodeCompact token))
       refusalIn outcome `shouldBe` Just "the token does not verify: JWTExpired"
 
     it "refuses a token whose header names no key" $ do
       (key, publicKey) <- generateEdDSAKeyPair
       token <- signTokenNamingNoKey key EdDSA (aClaimsSet "//example.com/sandbox/s1")
-      federation <- newFederation verifications
       (_, fetch) <- countedFetch (Just [publicKey])
-      outcome <- authenticate (const fetch) federation aNow (LB.toStrict (encodeCompact token))
+      federation <- federationWith fetch
+      outcome <- authenticate federation aNow (LB.toStrict (encodeCompact token))
       outcome `shouldBe` Refused RefusalNamesNoKey
 
     -- One fetch for a hundred requests, and the keys stay held: the whole
@@ -162,10 +162,10 @@ spec = do
     it "asks an issuer for its keys once across many tokens" $ do
       (key, publicKey) <- generateEdDSAKeyPair
       token <- signToken key EdDSA (aClaimsSet "//example.com/sandbox/s1")
-      federation <- newFederation verifications
       (asked, fetch) <- countedFetch (Just [publicKey])
+      federation <- federationWith fetch
       let bytes = LB.toStrict (encodeCompact token)
-      _ <- authenticate (const fetch) federation aNow bytes
-      _ <- authenticate (const fetch) federation aNow bytes
-      _ <- authenticate (const fetch) federation aNow bytes
+      _ <- authenticate federation aNow bytes
+      _ <- authenticate federation aNow bytes
+      _ <- authenticate federation aNow bytes
       readIORef asked `shouldReturn` 1

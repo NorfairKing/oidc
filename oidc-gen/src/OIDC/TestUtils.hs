@@ -66,7 +66,7 @@ aVerification :: Verification
 aVerification =
   Verification
     { verificationIssuer = Issuer "https://sts.example.com",
-      verificationAudiences = Audience "the-service" :| [],
+      verificationAudiences = TokenAudience "the-service" :| [],
       verificationAlgorithms = EdDSA :| [RS256],
       verificationMaxTokenLifetime = Just 300,
       verificationClockSkew = 60

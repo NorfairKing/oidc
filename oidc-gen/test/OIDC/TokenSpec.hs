@@ -98,7 +98,7 @@ spec = do
           Claims
             { claimsIssuer = Issuer "https://sts.example.com",
               claimsSubject = "//example.com/sandbox/s1",
-              claimsAudiences = [Audience "the-service"],
+              claimsAudiences = [TokenAudience "the-service"],
               claimsId = Nothing,
               claimsIssuedAt = aNow,
               claimsExpiry = addUTCTime 300 aNow,
@@ -135,7 +135,7 @@ spec = do
           aClaimsSet "//example.com/sandbox/s1"
             & claimAud ?~ JWT.Audience [aStringOrURI "the-service", aStringOrURI "something-else"]
       fmap claimsAudiences (verifyToken aVerification publicKey aNow token)
-        `shouldBe` Right [Audience "the-service", Audience "something-else"]
+        `shouldBe` Right [TokenAudience "the-service", TokenAudience "something-else"]
 
     it "hands back every claim at the top level of the payload" $ do
       (key, publicKey) <- generateEdDSAKeyPair

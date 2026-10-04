@@ -22,16 +22,23 @@ import OIDC.Provider
 import OIDC.Token
 import UnliftIO
 
--- | The issuers a service federates with, and the keys each of them has
--- published so far.
+-- | The issuers a service federates with, the keys each of them has published
+-- so far, and how to ask each for more.
 --
 -- Keyed by issuer because that is the only thing a token offers before
 -- anything about it has been checked: a service that federates with nobody is
 -- an empty one, which is almost every service.
-newtype Federation = Federation (Map Issuer FederatedIssuer)
+--
+-- Parameterised by the monad the fetch runs in, so that a caller hands its
+-- own fetch in once here rather than being asked for one on every request and
+-- having to work out which issuer is being asked about.
+newtype Federation m = Federation (Map Issuer (FederatedIssuer m))
 
-data FederatedIssuer = FederatedIssuer
+data FederatedIssuer m = FederatedIssuer
   { federatedIssuerVerification :: !Verification,
+    -- | Nothing if the key set could not be fetched, for whatever reason and
+    -- however that was reported.
+    federatedIssuerFetch :: !(m (Maybe [JWK])),
     federatedIssuerKeySet :: !KeySet
   }
 
@@ -54,22 +61,26 @@ verificationsByIssuer = foldM addVerification Map.empty
             then Left issuer
             else Right (Map.insert issuer verification verifications)
 
-newFederation :: (MonadIO m) => Map Issuer Verification -> m Federation
-newFederation verifications =
+newFederation ::
+  (MonadIO m) =>
+  Map Issuer (Verification, m (Maybe [JWK])) ->
+  m (Federation m)
+newFederation issuers =
   Federation
     <$> traverse
-      ( \verification -> do
+      ( \(verification, fetch) -> do
           keySet <- newKeySet
           pure
             FederatedIssuer
               { federatedIssuerVerification = verification,
+                federatedIssuerFetch = fetch,
                 federatedIssuerKeySet = keySet
               }
       )
-      verifications
+      issuers
 
 -- | The issuer a token naming this one is to be checked against.
-federatedIssuer :: Federation -> Issuer -> Maybe FederatedIssuer
+federatedIssuer :: Federation m -> Issuer -> Maybe (FederatedIssuer m)
 federatedIssuer (Federation issuers) issuer = Map.lookup issuer issuers
 
 -- | What a bearer token turned out to be.
@@ -90,15 +101,11 @@ data Outcome
 -- a request is being judged at, and so that this is testable without a clock.
 authenticate ::
   (MonadUnliftIO m) =>
-  -- | How to fetch an issuer's key set. Only called for an issuer this
-  -- service federates with, and only when a token names a key that is not
-  -- held yet.
-  (Issuer -> m (Maybe [JWK])) ->
-  Federation ->
+  Federation m ->
   UTCTime ->
   SB.ByteString ->
   m Outcome
-authenticate fetch federation now token =
+authenticate federation now token =
   case unverifiedIssuer token >>= federatedIssuer federation of
     Nothing -> pure NotFederated
     Just issuer -> case decodeToken token of
@@ -106,14 +113,14 @@ authenticate fetch federation now token =
       Right signedJWT -> case tokenKid signedJWT of
         Nothing -> pure (Refused RefusalNamesNoKey)
         Just kid -> do
-          let verification = federatedIssuerVerification issuer
           mKey <-
             verificationKey
-              (fetch (verificationIssuer verification))
+              (federatedIssuerFetch issuer)
               (federatedIssuerKeySet issuer)
               kid
           case mKey of
             Nothing -> pure (Refused (RefusalNamesUnknownKey kid))
-            Just key -> case verifyToken verification key now signedJWT of
-              Left refusal -> pure (Refused refusal)
-              Right claims -> pure (Accepted claims)
+            Just key ->
+              case verifyToken (federatedIssuerVerification issuer) key now signedJWT of
+                Left refusal -> pure (Refused refusal)
+                Right claims -> pure (Accepted claims)

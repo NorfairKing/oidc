@@ -125,7 +125,7 @@ renderRefusal = \case
 data Claims = Claims
   { claimsIssuer :: !Issuer,
     claimsSubject :: !Text,
-    claimsAudiences :: ![Audience],
+    claimsAudiences :: ![TokenAudience],
     -- | The @jti@ claim, when the issuer sets one.
     claimsId :: !(Maybe Text),
     claimsIssuedAt :: !UTCTime,
@@ -209,7 +209,7 @@ verifyToken ::
 verifyToken verification key now signedJWT = do
   let expectedIssuer = unIssuer (verificationIssuer verification)
   let expectedAudiences =
-        NE.toList (NE.map unAudience (verificationAudiences verification))
+        NE.toList (NE.map unTokenAudience (verificationAudiences verification))
   -- Compared as the issuer spells them, which is how an issuer documents
   -- itself and how 'unverifiedIssuer' already picks the settings to use.
   -- Comparing what jose parsed them into instead would be a second answer to
@@ -240,7 +240,7 @@ verifyToken verification key now signedJWT = do
     Just issuer -> Right (Issuer (review stringOrUri issuer))
   audiences <- case view claimAud registered of
     Just (JWT.Audience audiences@(_ : _)) ->
-      Right (map (Audience . review stringOrUri) audiences)
+      Right (map (TokenAudience . review stringOrUri) audiences)
     _ -> Left RefusalHasNoAudience
   (issuedAt, expiry) <- case (view claimIat registered, view claimExp registered) of
     (Just (NumericDate issuedAt), Just (NumericDate expiry))

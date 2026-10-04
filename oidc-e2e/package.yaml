@@ -14,6 +14,7 @@ library:
   dependencies:
   - aeson
   - bytestring
+  - containers
   - http-client
   - http-types
   - network-uri

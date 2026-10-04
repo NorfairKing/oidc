@@ -9,6 +9,6 @@ root-instances = [
   # it, which is a use weeder cannot see from this repo alone. Ord on Issuer
   # is used here, by the federation's Map; these two are the same promise to a
   # caller, and taking one back later would be a breaking change.
-  { instance = "Ord Audience" },
+  { instance = "Ord TokenAudience" },
   { instance = "Ord Algorithm" },
 ]

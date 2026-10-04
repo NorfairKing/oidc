@@ -16,11 +16,6 @@ module OIDC.KeySet
   ( KeySet,
     newKeySet,
     verificationKey,
-    KeySetState (..),
-    readKeySetState,
-    refetchAllowed,
-    minimumRefetchInterval,
-    keyWithKid,
     parseJWKSet,
 
     -- * Re-exported so that holding a key does not mean depending on jose
@@ -28,40 +23,13 @@ module OIDC.KeySet
   )
 where
 
-import Control.Lens (view)
-import Crypto.JOSE.JWK (JWK, JWKSet (..), jwkKid)
+import Crypto.JOSE.JWK (JWK, JWKSet (..))
 import qualified Data.Aeson as JSON
 import qualified Data.ByteString.Lazy as LB
-import Data.List (find)
 import Data.Text (Text)
 import Data.Time
+import OIDC.KeySet.Internal
 import UnliftIO
-
--- | The keys one issuer published, and when it was last asked for them.
---
--- An 'MVar' rather than a 'TVar' because it is also the lock a fetch is made
--- under: requests that arrive while one is in flight wait for its answer
--- instead of each starting a fetch of their own.
-newtype KeySet = KeySet {unKeySet :: MVar KeySetState}
-
-data KeySetState = KeySetState
-  { keySetStateKeys :: ![JWK],
-    -- | When a fetch was last attempted, whether or not it worked.
-    --
-    -- A failed attempt counts, so that an issuer that is down is asked at the
-    -- same rate as one that is up rather than once per request.
-    keySetStateAttempted :: !(Maybe UTCTime)
-  }
-  deriving (Show, Eq)
-
--- | How long after asking an issuer for its keys this will ask again.
---
--- This is what stops a token carrying a @kid@ nobody ever published from
--- turning each request into a request to the issuer. It is also the longest a
--- rotation can go unnoticed, which is why it is a minute rather than an hour:
--- a key set is a few hundred bytes and an issuer publishes it on a CDN.
-minimumRefetchInterval :: NominalDiffTime
-minimumRefetchInterval = 60
 
 -- | An issuer whose keys have not been asked for yet.
 newKeySet :: (MonadIO m) => m KeySet
@@ -72,11 +40,6 @@ newKeySet =
         { keySetStateKeys = [],
           keySetStateAttempted = Nothing
         }
-
--- | What is held right now, for a caller that wants to look without asking
--- for anything.
-readKeySetState :: (MonadIO m) => KeySet -> m KeySetState
-readKeySetState = readMVar . unKeySet
 
 -- | The key this issuer published under this @kid@, fetching if it is not
 -- held yet.
@@ -114,19 +77,6 @@ verificationKey fetch (KeySet keySetVar) kid = do
                       },
                     keyWithKid kid keys
                   )
-
-refetchAllowed :: UTCTime -> KeySetState -> Bool
-refetchAllowed now state = case keySetStateAttempted state of
-  Nothing -> True
-  Just attempted -> diffUTCTime now attempted >= minimumRefetchInterval
-
--- | The one key published under this @kid@.
---
--- A key with no @kid@ at all is never this key: a key set that names none of
--- its keys cannot say which one a token was signed with, and guessing is what
--- looking the key up is meant to avoid.
-keyWithKid :: Text -> [JWK] -> Maybe JWK
-keyWithKid kid = find ((== Just kid) . view jwkKid)
 
 -- | Read the key set an issuer publishes.
 --

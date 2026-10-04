@@ -69,6 +69,7 @@
       within:
         - OIDC.Token
         - OIDC.KeySet
+        - OIDC.KeySet.Internal
         - OIDC.TokenSpec
         - OIDC.KeySetSpec
         - OIDC.TestUtils

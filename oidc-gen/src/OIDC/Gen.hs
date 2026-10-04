@@ -17,7 +17,7 @@ instance GenValid Algorithm
 
 instance GenValid Issuer
 
-instance GenValid Audience
+instance GenValid TokenAudience
 
 instance GenValid Discovery
 

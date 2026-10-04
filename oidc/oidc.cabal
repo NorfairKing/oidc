@@ -34,6 +34,7 @@ library
       OIDC.Discovery
       OIDC.Federation
       OIDC.KeySet
+      OIDC.KeySet.Internal
       OIDC.Provider
       OIDC.Token
   other-modules:

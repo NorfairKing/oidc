@@ -5,7 +5,7 @@
 -- library to accept it.
 module OIDC.Provider
   ( Issuer (..),
-    Audience (..),
+    TokenAudience (..),
     Verification (..),
     verificationFor,
   )
@@ -35,10 +35,10 @@ instance Validity Issuer
 --
 -- This is the name the issuer knows the service by, and saying it is what
 -- stops a token minted for one service being replayed against another.
-newtype Audience = Audience {unAudience :: Text}
+newtype TokenAudience = TokenAudience {unTokenAudience :: Text}
   deriving (Show, Eq, Ord, Generic)
 
-instance Validity Audience
+instance Validity TokenAudience
 
 -- | Everything about an issuer that a token is checked against.
 --
@@ -49,7 +49,7 @@ instance Validity Audience
 data Verification = Verification
   { verificationIssuer :: !Issuer,
     -- | A token naming any one of these is for us.
-    verificationAudiences :: !(NonEmpty Audience),
+    verificationAudiences :: !(NonEmpty TokenAudience),
     -- | The algorithms this issuer is allowed to have signed with.
     --
     -- An allowlist rather than whatever the token's header asks for, so that
@@ -86,7 +86,7 @@ instance Validity Verification where
 -- A starting point to adjust rather than the whole of the type, so that a
 -- field added later is one every caller is asked about by the compiler only
 -- where it builds the record itself.
-verificationFor :: Issuer -> Audience -> NonEmpty Algorithm -> Verification
+verificationFor :: Issuer -> TokenAudience -> NonEmpty Algorithm -> Verification
 verificationFor issuer audience algorithms =
   Verification
     { verificationIssuer = issuer,

@@ -14,6 +14,7 @@ module OIDC.E2E (oidcE2E) where
 import qualified Data.ByteString as SB
 import Data.IORef
 import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as TE
@@ -37,14 +38,22 @@ e2eSpec man E2ESettings {..} = do
 
   -- The audience is the client a token was minted for, which is how dex and
   -- every other issuer name the service a token is meant for.
+  --
+  -- A minute of skew because the issuer stamps a token from its own clock and
+  -- this reads its own. They are two hosts, so a token can arrive stamped a
+  -- fraction of a second in the future, and with no skew allowed that is a
+  -- token refused for the wrong reason.
   let verification =
-        verificationFor issuer (Audience e2eSettingClientId) (EdDSA :| [RS256])
+        (verificationFor issuer (TokenAudience e2eSettingClientId) (EdDSA :| [RS256]))
+          { verificationClockSkew = 60
+          }
 
-  let federationFor :: [Verification] -> IO Federation
-      federationFor verifications = case verificationsByIssuer verifications of
+  let federationFor :: [Verification] -> IO (Maybe [JWK]) -> IO (Federation IO)
+      federationFor verifications fetch = case verificationsByIssuer verifications of
         Left duplicate ->
           expectationFailure (unwords ["Configured twice:", show (unIssuer duplicate)])
-        Right byIssuer -> newFederation byIssuer
+        Right byIssuer ->
+          newFederation (Map.map (\forIssuer -> (forIssuer, fetch)) byIssuer)
 
   -- Where this issuer says its keys are, asked of the issuer rather than
   -- configured, which is the whole point of discovery.
@@ -57,12 +66,12 @@ e2eSpec man E2ESettings {..} = do
 
   -- Counted, so that a test can say the keys came from the issuer over the
   -- network rather than from anywhere this test knew in advance.
-  let countedFetch :: Text -> IO (IORef Int, Issuer -> IO (Maybe [JWK]))
+  let countedFetch :: Text -> IO (IORef Int, IO (Maybe [JWK]))
       countedFetch url = do
         asked <- newIORef (0 :: Int)
         pure
           ( asked,
-            \_ -> do
+            do
               modifyIORef' asked (+ 1)
               fetchJWKSet man url
           )
@@ -111,14 +120,14 @@ e2eSpec man E2ESettings {..} = do
     it "accepts a token this issuer really signed" $ do
       url <- jwksURL
       token <- aToken
-      federation <- federationFor [verification]
       (asked, fetch) <- countedFetch url
+      federation <- federationFor [verification] fetch
       now <- getCurrentTime
-      outcome <- authenticate fetch federation now token
+      outcome <- authenticate federation now token
       case outcome of
         Accepted claims -> do
           claimsIssuer claims `shouldBe` issuer
-          claimsAudiences claims `shouldBe` [Audience e2eSettingClientId]
+          claimsAudiences claims `shouldBe` [TokenAudience e2eSettingClientId]
           -- The issuer decides what a subject looks like, so this says there
           -- is one rather than what it says.
           claimsSubject claims `shouldNotBe` ""
@@ -132,13 +141,13 @@ e2eSpec man E2ESettings {..} = do
 
     it "asks the issuer for its keys once across several tokens" $ do
       url <- jwksURL
-      federation <- federationFor [verification]
       (asked, fetch) <- countedFetch url
+      federation <- federationFor [verification] fetch
       now <- getCurrentTime
       first <- aToken
       second <- aToken
-      _ <- authenticate fetch federation now first
-      _ <- authenticate fetch federation now second
+      _ <- authenticate federation now first
+      _ <- authenticate federation now second
       readIORef asked `shouldReturn` 1
 
     -- Minted by the same issuer, with the same key, for somebody else. The
@@ -147,25 +156,26 @@ e2eSpec man E2ESettings {..} = do
     it "refuses a token this issuer minted for another client" $ do
       url <- jwksURL
       token <- tokenFor (e2eSettingOtherClientId, e2eSettingOtherClientSecret)
-      federation <- federationFor [verification]
       (_, fetch) <- countedFetch url
+      federation <- federationFor [verification] fetch
       now <- getCurrentTime
-      outcome <- authenticate fetch federation now token
+      outcome <- authenticate federation now token
       refusalIn outcome `shouldBe` Just "the token does not verify: JWTNotInAudience"
 
     it "says nothing about a token from an issuer it does not federate with" $ do
       url <- jwksURL
       token <- aToken
+      (asked, fetch) <- countedFetch url
       federation <-
         federationFor
           [ verificationFor
               (Issuer "http://elsewhere.example.com")
-              (Audience "whoever")
+              (TokenAudience "whoever")
               (EdDSA :| [])
           ]
-      (asked, fetch) <- countedFetch url
+          fetch
       now <- getCurrentTime
-      authenticate fetch federation now token `shouldReturn` NotFederated
+      authenticate federation now token `shouldReturn` NotFederated
       -- An issuer nobody federates with cannot be made to cost a request.
       readIORef asked `shouldReturn` 0
 
@@ -181,10 +191,10 @@ e2eSpec man E2ESettings {..} = do
             TE.encodeUtf8 $
               Text.intercalate "." [header, payload, Text.cons (flipFirst signature) (Text.drop 1 signature)]
         _ -> expectationFailure "A signed token has three segments."
-      federation <- federationFor [verification]
       (_, fetch) <- countedFetch url
+      federation <- federationFor [verification] fetch
       now <- getCurrentTime
-      outcome <- authenticate fetch federation now tampered
+      outcome <- authenticate federation now tampered
       refusalIn outcome `shouldBe` Just "the token does not verify: JWSError JWSInvalidSignature"
 
     -- This issuer mints short-lived tokens, so a clock far enough ahead is
@@ -192,10 +202,10 @@ e2eSpec man E2ESettings {..} = do
     it "refuses a token that has expired" $ do
       url <- jwksURL
       token <- aToken
-      federation <- federationFor [verification]
       (_, fetch) <- countedFetch url
+      federation <- federationFor [verification] fetch
       now <- getCurrentTime
-      outcome <- authenticate fetch federation (addUTCTime (24 * 3600) now) token
+      outcome <- authenticate federation (addUTCTime (24 * 3600) now) token
       refusalIn outcome `shouldBe` Just "the token does not verify: JWTExpired"
 
     it "refuses a token signed with an algorithm this issuer may not use" $ do
@@ -203,10 +213,10 @@ e2eSpec man E2ESettings {..} = do
       token <- aToken
       -- Ed25519 only, which this issuer does not sign with, so the signature
       -- it did make is one the library will not look at.
-      federation <- federationFor [verification {verificationAlgorithms = EdDSA :| []}]
       (_, fetch) <- countedFetch url
+      federation <- federationFor [verification {verificationAlgorithms = EdDSA :| []}] fetch
       now <- getCurrentTime
-      outcome <- authenticate fetch federation now token
+      outcome <- authenticate federation now token
       refusalIn outcome `shouldBe` Just "the token does not verify: JWSError JWSNoSignatures"
 
 -- | A character that is not the one a segment starts with, and is still part

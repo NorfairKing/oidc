@@ -7,6 +7,7 @@ import qualified Data.Aeson as JSON
 import Data.IORef
 import Data.Time
 import OIDC
+import OIDC.KeySet.Internal
 import OIDC.TestUtils
 import Test.Syd
 
