@@ -61,10 +61,13 @@ verificationsByIssuer = foldM addVerification Map.empty
             then Left issuer
             else Right (Map.insert issuer verification verifications)
 
+-- | The monad the federation is built in is separate from the monad its
+-- fetches run in, because a service usually assembles what it needs long
+-- before, and somewhere else than, it answers a request.
 newFederation ::
-  (MonadIO m) =>
+  (MonadIO n) =>
   Map Issuer (Verification, m (Maybe [JWK])) ->
-  m (Federation m)
+  n (Federation m)
 newFederation issuers =
   Federation
     <$> traverse
