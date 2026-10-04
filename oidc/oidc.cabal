@@ -18,6 +18,7 @@ library
       OIDC
       OIDC.Algorithm
       OIDC.Discovery
+      OIDC.Federation
       OIDC.KeySet
       OIDC.Provider
       OIDC.Token

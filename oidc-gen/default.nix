@@ -13,7 +13,7 @@ mkDerivation {
   ];
   testHaskellDepends = [
     aeson base bytestring containers genvalidity-sydtest jose lens oidc
-    sydtest time
+    sydtest text time
   ];
   testToolDepends = [ sydtest-discover ];
   description = "Generators and tests for oidc";

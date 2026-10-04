@@ -22,12 +22,14 @@ module OIDC
     module OIDC.Provider,
     module OIDC.Token,
     module OIDC.KeySet,
+    module OIDC.Federation,
     module OIDC.Discovery,
   )
 where
 
 import OIDC.Algorithm
 import OIDC.Discovery
+import OIDC.Federation
 import OIDC.KeySet
 import OIDC.Provider
 import OIDC.Token

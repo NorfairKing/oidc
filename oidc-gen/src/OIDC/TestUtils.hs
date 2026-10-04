@@ -11,6 +11,7 @@ module OIDC.TestUtils
     aVerification,
     aClaimsSet,
     signToken,
+    signTokenNamingNoKey,
     generateEdDSAKeyPair,
     generateRSAKeyPair,
     generateKeyNamed,
@@ -90,6 +91,15 @@ signToken key algorithm claims = do
         key
         (newJWSHeader ((), algorithmJoseAlg algorithm) & kid ?~ HeaderParam () aKid)
         claims
+  case errOrToken of
+    Left (err :: JWTError) -> expectationFailure (show err)
+    Right token -> pure token
+
+-- | A token whose header says nothing about which key signed it.
+signTokenNamingNoKey :: JWK -> Algorithm -> ClaimsSet -> IO SignedJWT
+signTokenNamingNoKey key algorithm claims = do
+  errOrToken <-
+    runJOSE (signClaims key (newJWSHeader ((), algorithmJoseAlg algorithm)) claims)
   case errOrToken of
     Left (err :: JWTError) -> expectationFailure (show err)
     Right token -> pure token

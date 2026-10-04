@@ -27,7 +27,7 @@ import OIDC.Algorithm
 -- call equal are still two different issuers as far as this library is
 -- concerned, which is the safe direction to be wrong in.
 newtype Issuer = Issuer {unIssuer :: Text}
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Ord, Generic)
 
 instance Validity Issuer
 
@@ -36,7 +36,7 @@ instance Validity Issuer
 -- This is the name the issuer knows the service by, and saying it is what
 -- stops a token minted for one service being replayed against another.
 newtype Audience = Audience {unAudience :: Text}
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Ord, Generic)
 
 instance Validity Audience
 

@@ -44,4 +44,5 @@ tests:
     - oidc
     - oidc-gen
     - sydtest
+    - text
     - time

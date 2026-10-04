@@ -42,6 +42,7 @@ test-suite oidc-test
   other-modules:
       OIDC.AlgorithmSpec
       OIDC.DiscoverySpec
+      OIDC.FederationSpec
       OIDC.KeySetSpec
       OIDC.ProviderSpec
       OIDC.TokenSpec
@@ -62,5 +63,6 @@ test-suite oidc-test
     , oidc
     , oidc-gen
     , sydtest
+    , text
     , time
   default-language: Haskell2010

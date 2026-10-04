@@ -42,3 +42,17 @@ vouched for, not what they may do.
   `KeySet` holds the part that is easy to get wrong: one fetch at a time, a
   floor under how often an issuer is asked, and keeping the keys it has when a
   fetch fails.
+
+## The whole check
+
+`OIDC.Federation` does all four steps against the issuers you federate with:
+
+```haskell
+federation <- newFederation verifications
+outcome <- authenticate fetchKeySet federation now bearerToken
+```
+
+`Outcome` is `NotFederated`, `Refused refusal` or `Accepted claims`.
+`NotFederated` covers both somebody else's credential and something that is
+not a token at all: nothing was checked, and a service that answered
+differently would be telling whoever asked which issuers it trusts.
