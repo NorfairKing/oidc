@@ -1,5 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-
 -- | Deciding whether a bearer token is a credential, from end to end.
 --
 -- "OIDC.Token" answers that for one issuer whose key is already in hand. This
@@ -7,16 +5,14 @@
 -- the token, that issuer's key for it, and what the issuer said.
 module OIDC.Federation
   ( Federation,
-    federationIssuers,
-    FederatedIssuer (..),
     verificationsByIssuer,
     newFederation,
-    federatedIssuer,
     Outcome (..),
     authenticate,
   )
 where
 
+import Control.Monad (foldM)
 import qualified Data.ByteString as SB
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -32,7 +28,7 @@ import UnliftIO
 -- Keyed by issuer because that is the only thing a token offers before
 -- anything about it has been checked: a service that federates with nobody is
 -- an empty one, which is almost every service.
-newtype Federation = Federation {federationIssuers :: Map Issuer FederatedIssuer}
+newtype Federation = Federation (Map Issuer FederatedIssuer)
 
 data FederatedIssuer = FederatedIssuer
   { federatedIssuerVerification :: !Verification,
@@ -46,19 +42,17 @@ data FederatedIssuer = FederatedIssuer
 -- accident of the order they were written in. Separate from 'newFederation'
 -- so that a service reading its settings can refuse them before it starts.
 verificationsByIssuer :: [Verification] -> Either Issuer (Map Issuer Verification)
-verificationsByIssuer = foldr addVerification (Right Map.empty)
+verificationsByIssuer = foldM addVerification Map.empty
   where
     addVerification ::
+      Map Issuer Verification ->
       Verification ->
-      Either Issuer (Map Issuer Verification) ->
       Either Issuer (Map Issuer Verification)
-    addVerification verification = \case
-      Left duplicate -> Left duplicate
-      Right verifications
-        | Map.member issuer verifications -> Left issuer
-        | otherwise -> Right (Map.insert issuer verification verifications)
-        where
-          issuer = verificationIssuer verification
+    addVerification verifications verification =
+      let issuer = verificationIssuer verification
+       in if Map.member issuer verifications
+            then Left issuer
+            else Right (Map.insert issuer verification verifications)
 
 newFederation :: (MonadIO m) => Map Issuer Verification -> m Federation
 newFederation verifications =
@@ -74,6 +68,7 @@ newFederation verifications =
       )
       verifications
 
+-- | The issuer a token naming this one is to be checked against.
 federatedIssuer :: Federation -> Issuer -> Maybe FederatedIssuer
 federatedIssuer (Federation issuers) issuer = Map.lookup issuer issuers
 
