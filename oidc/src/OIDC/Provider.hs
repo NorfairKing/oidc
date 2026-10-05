@@ -14,6 +14,7 @@ where
 import Autodocodec
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Text (Text)
+import qualified Data.Text as Text
 import Data.Time (NominalDiffTime)
 import Data.Validity
 import Data.Validity.Text ()
@@ -30,7 +31,16 @@ import OIDC.Algorithm
 newtype Issuer = Issuer {unIssuer :: Text}
   deriving (Show, Eq, Ord, Generic)
 
-instance Validity Issuer
+-- | An empty issuer is no issuer: @iss@ is the name something calls itself
+-- by, and nothing calls itself by nothing. Accepting one here would let a
+-- caller hold a configuration that refuses every token it is ever given and
+-- says nothing about why.
+instance Validity Issuer where
+  validate issuer =
+    genericValidate issuer
+      <> declare
+        "the issuer is not empty"
+        (not (Text.null (unIssuer issuer)))
 
 instance HasCodec Issuer where
   codec = dimapCodec Issuer unIssuer codec <?> "an issuer, exactly as it spells itself"
@@ -42,7 +52,14 @@ instance HasCodec Issuer where
 newtype TokenAudience = TokenAudience {unTokenAudience :: Text}
   deriving (Show, Eq, Generic)
 
-instance Validity TokenAudience
+-- | No issuer mints a token for an empty audience, so an empty one here
+-- accepts nothing, in the same way an empty 'Issuer' does.
+instance Validity TokenAudience where
+  validate audience =
+    genericValidate audience
+      <> declare
+        "the audience is not empty"
+        (not (Text.null (unTokenAudience audience)))
 
 instance HasCodec TokenAudience where
   codec =

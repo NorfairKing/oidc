@@ -36,6 +36,24 @@ spec = do
       forAllValid $ \audience ->
         toJSONViaCodec audience `shouldBe` JSON.String (unTokenAudience audience)
 
+  -- An issuer or an audience that is empty names nobody, so a caller
+  -- configured with one would refuse every token and learn nothing from
+  -- doing so. Asserted here because generating only valid values never asks
+  -- whether an invalid one is caught.
+  describe "Validity Issuer" $ do
+    it "is invalid when it is empty" $
+      shouldBeInvalid (Issuer "")
+
+    it "is valid when it names something" $
+      shouldBeValid (Issuer "https://sts.example.com")
+
+  describe "Validity TokenAudience" $ do
+    it "is invalid when it is empty" $
+      shouldBeInvalid (TokenAudience "")
+
+    it "is valid when it names something" $
+      shouldBeValid (TokenAudience "the-service")
+
   describe "verificationFor" $ do
     it "accepts only the issuer and audience it was given" $
       verificationFor (Issuer "https://sts.example.com") (TokenAudience "the-service") (EdDSA :| [])
