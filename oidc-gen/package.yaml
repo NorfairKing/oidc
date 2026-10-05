@@ -75,3 +75,4 @@ tests:
     - sydtest
     - text
     - time
+    - unliftio

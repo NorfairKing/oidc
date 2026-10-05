@@ -75,8 +75,9 @@ import OIDC.Provider
 -- holding the token is told neither.
 data Refusal
   = RefusalMalformed !String
-  | -- | The token names no key, so there is no way to say which of the
-    -- issuer's keys it claims to be signed with.
+  | -- | The token names no key and the issuer does not publish exactly one,
+    -- so nothing says which of them signed it. A token naming no key is fine
+    -- against an issuer that publishes one.
     RefusalNamesNoKey
   | -- | The token names a key the issuer does not publish. Raised by the
     -- caller, from what "OIDC.KeySet" answered.
@@ -98,7 +99,7 @@ renderRefusal :: Refusal -> String
 renderRefusal = \case
   RefusalMalformed err -> unwords ["the token is not a signed JWT:", err]
   RefusalNamesNoKey ->
-    "the token's header names no key, so it cannot say which of the issuer's keys signed it"
+    "the token's header names no key, and this issuer does not publish exactly one, so nothing says which of its keys signed it"
   RefusalNamesUnknownKey k ->
     unwords ["the token names the key", concat [show @Text k, ","], "which the issuer does not publish"]
   RefusalDoesNotVerify err -> unwords ["the token does not verify:", show @JWTError err]

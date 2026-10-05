@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 -- | What 'OIDC.KeySet' is made of.
 --
 -- Here rather than beside it so that the module a caller imports offers only
@@ -9,6 +11,7 @@ module OIDC.KeySet.Internal
     readKeySetState,
     refetchAllowed,
     minimumRefetchInterval,
+    keyFor,
     keyWithKid,
   )
 where
@@ -22,10 +25,18 @@ import UnliftIO
 
 -- | The keys one issuer published, and when it was last asked for them.
 --
--- An 'MVar' rather than a 'TVar' because it is also the lock a fetch is made
--- under: requests that arrive while one is in flight wait for its answer
--- instead of each starting a fetch of their own.
-newtype KeySet = KeySet {unKeySet :: MVar KeySetState}
+-- The state and the lock are two things rather than one. A single 'MVar'
+-- would serve as both, but taking it to make a fetch empties it, so every
+-- read would block for as long as that fetch takes: a request whose key was
+-- published long ago would wait on an issuer it needs nothing from. The lock
+-- is held across the fetch on purpose, so it must be a lock nobody reads
+-- through.
+data KeySet = KeySet
+  { keySetState :: !(TVar KeySetState),
+    -- | Held while fetching, so that requests arriving together make one
+    -- request to the issuer rather than one each.
+    keySetFetchLock :: !(MVar ())
+  }
 
 data KeySetState = KeySetState
   { keySetStateKeys :: ![JWK],
@@ -48,13 +59,33 @@ minimumRefetchInterval = 60
 
 -- | What is held right now, for a caller that wants to look without asking
 -- for anything.
+--
+-- Never waits, including while a fetch is in flight.
 readKeySetState :: (MonadIO m) => KeySet -> m KeySetState
-readKeySetState = readMVar . unKeySet
+readKeySetState = readTVarIO . keySetState
 
 refetchAllowed :: UTCTime -> KeySetState -> Bool
 refetchAllowed now state = case keySetStateAttempted state of
   Nothing -> True
   Just attempted -> diffUTCTime now attempted >= minimumRefetchInterval
+
+-- | The key a token asks for: the one it named, or the only one there is when
+-- it named none.
+--
+-- A header carrying no @kid@ is a header RFC 7515 allows, and an issuer that
+-- publishes exactly one key has already said which key signed it. Refusing
+-- those outright would mean refusing every token from such an issuer, with
+-- nothing but a log line to say why.
+--
+-- With none published, or more than one, there is nothing to go on. Trying
+-- each key in turn would verify the token against a key the issuer never said
+-- it used, which is the guessing that naming a key exists to avoid.
+keyFor :: Maybe Text -> [JWK] -> Maybe JWK
+keyFor = \case
+  Just kid -> keyWithKid kid
+  Nothing -> \case
+    [key] -> Just key
+    _ -> Nothing
 
 -- | The one key published under this @kid@.
 --

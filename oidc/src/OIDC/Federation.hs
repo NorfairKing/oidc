@@ -49,17 +49,17 @@ data FederatedIssuer m = FederatedIssuer
 -- accident of the order they were written in. Separate from 'newFederation'
 -- so that a service reading its settings can refuse them before it starts.
 verificationsByIssuer :: [Verification] -> Either Issuer (Map Issuer Verification)
-verificationsByIssuer = foldM addVerification Map.empty
-  where
-    addVerification ::
-      Map Issuer Verification ->
-      Verification ->
-      Either Issuer (Map Issuer Verification)
-    addVerification verifications verification =
-      let issuer = verificationIssuer verification
-       in if Map.member issuer verifications
-            then Left issuer
-            else Right (Map.insert issuer verification verifications)
+verificationsByIssuer =
+  let addVerification ::
+        Map Issuer Verification ->
+        Verification ->
+        Either Issuer (Map Issuer Verification)
+      addVerification verifications verification =
+        let issuer = verificationIssuer verification
+         in if Map.member issuer verifications
+              then Left issuer
+              else Right (Map.insert issuer verification verifications)
+   in foldM addVerification Map.empty
 
 -- | The monad the federation is built in is separate from the monad its
 -- fetches run in, because a service usually assembles what it needs long
@@ -113,17 +113,16 @@ authenticate federation now token =
     Nothing -> pure NotFederated
     Just issuer -> case decodeToken token of
       Left refusal -> pure (Refused refusal)
-      Right signedJWT -> case tokenKid signedJWT of
-        Nothing -> pure (Refused RefusalNamesNoKey)
-        Just kid -> do
-          mKey <-
-            verificationKey
-              (federatedIssuerFetch issuer)
-              (federatedIssuerKeySet issuer)
-              kid
-          case mKey of
-            Nothing -> pure (Refused (RefusalNamesUnknownKey kid))
-            Just key ->
-              case verifyToken (federatedIssuerVerification issuer) key now signedJWT of
-                Left refusal -> pure (Refused refusal)
-                Right claims -> pure (Accepted claims)
+      Right signedJWT -> do
+        let mKid = tokenKid signedJWT
+        mKey <-
+          verificationKey
+            (federatedIssuerFetch issuer)
+            (federatedIssuerKeySet issuer)
+            mKid
+        case mKey of
+          Nothing -> pure (Refused (maybe RefusalNamesNoKey RefusalNamesUnknownKey mKid))
+          Just key ->
+            case verifyToken (federatedIssuerVerification issuer) key now signedJWT of
+              Left refusal -> pure (Refused refusal)
+              Right claims -> pure (Accepted claims)

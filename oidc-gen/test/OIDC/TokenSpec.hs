@@ -79,7 +79,7 @@ spec = do
           RefusalHasNoSubject
         ]
         `shouldBe` [ "the token is not a signed JWT: the reason",
-                     "the token's header names no key, so it cannot say which of the issuer's keys signed it",
+                     "the token's header names no key, and this issuer does not publish exactly one, so nothing says which of its keys signed it",
                      "the token names the key \"the-key\", which the issuer does not publish",
                      "the token does not verify: JWTExpired",
                      "the token names no issuer, so nothing says who signed it",

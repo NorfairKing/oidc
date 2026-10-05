@@ -148,10 +148,22 @@ spec = do
         authenticate federation (addUTCTime 3600 aNow) (LB.toStrict (encodeCompact token))
       refusalIn outcome `shouldBe` Just "the token does not verify: JWTExpired"
 
-    it "refuses a token whose header names no key" $ do
+    -- RFC 7515 makes the header optional, and an issuer that publishes one
+    -- key has already said which key signed its tokens. Refusing these would
+    -- mean refusing every token such an issuer mints.
+    it "accepts a token whose header names no key when its issuer publishes one" $ do
       (key, publicKey) <- generateEdDSAKeyPair
       token <- signTokenNamingNoKey key EdDSA (aClaimsSet "//example.com/sandbox/s1")
       (_, fetch) <- countedFetch (Just [publicKey])
+      federation <- federationWith fetch
+      outcome <- authenticate federation aNow (LB.toStrict (encodeCompact token))
+      fmap claimsSubject (acceptedClaims outcome) `shouldBe` Just "//example.com/sandbox/s1"
+
+    it "refuses a token whose header names no key when its issuer publishes two" $ do
+      (key, publicKey) <- generateEdDSAKeyPair
+      (_, anotherPublicKey) <- generateEdDSAKeyPair
+      token <- signTokenNamingNoKey key EdDSA (aClaimsSet "//example.com/sandbox/s1")
+      (_, fetch) <- countedFetch (Just [publicKey, anotherPublicKey])
       federation <- federationWith fetch
       outcome <- authenticate federation aNow (LB.toStrict (encodeCompact token))
       outcome `shouldBe` Refused RefusalNamesNoKey
