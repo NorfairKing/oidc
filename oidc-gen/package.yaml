@@ -49,8 +49,10 @@ tests:
     dependencies:
     - aeson
     - bytestring
+    - autodocodec
     - containers
     - genvalidity-sydtest
+    - genvalidity-sydtest-aeson
     - jose
     - lens
     - oidc

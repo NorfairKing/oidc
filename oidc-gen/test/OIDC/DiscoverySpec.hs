@@ -9,10 +9,12 @@ import OIDC
 import OIDC.Gen ()
 import Test.Syd
 import Test.Syd.Validity
+import Test.Syd.Validity.Aeson
 
 spec :: Spec
 spec = do
   genValidSpec @Discovery
+  jsonSpec @Discovery
 
   describe "discoveryURL" $ do
     it "is the well-known path under the issuer" $

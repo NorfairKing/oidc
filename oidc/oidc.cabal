@@ -44,6 +44,7 @@ library
   ghc-options: -Wall
   build-depends:
       aeson
+    , autodocodec
     , base >=4.7 && <5
     , bytestring
     , containers

@@ -68,10 +68,12 @@ test-suite oidc-test
       sydtest-discover:sydtest-discover
   build-depends:
       aeson
+    , autodocodec
     , base >=4.7 && <5
     , bytestring
     , containers
     , genvalidity-sydtest
+    , genvalidity-sydtest-aeson
     , jose
     , lens
     , oidc

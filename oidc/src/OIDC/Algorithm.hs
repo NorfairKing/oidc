@@ -5,14 +5,18 @@
 -- | The signing algorithms a token may be signed with.
 module OIDC.Algorithm
   ( Algorithm (..),
+    allAlgorithms,
     algorithmJoseAlg,
     renderAlgorithm,
     parseAlgorithm,
   )
 where
 
+import Autodocodec
 import qualified Crypto.JOSE.JWA.JWS as JWS
 import Data.List (find)
+import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.List.NonEmpty as NE
 import Data.Text (Text)
 import Data.Validity
 import GHC.Generics (Generic)
@@ -38,6 +42,20 @@ data Algorithm
   deriving (Show, Eq, Enum, Bounded, Generic)
 
 instance Validity Algorithm
+
+-- | Written as the JOSE registry names it, which is how an issuer writes it
+-- too.
+instance HasCodec Algorithm where
+  codec =
+    stringConstCodec (NE.map (\algorithm -> (algorithm, renderAlgorithm algorithm)) allAlgorithms)
+      <?> "a JSON Web Signature algorithm"
+
+-- | Every algorithm this library will check.
+--
+-- Derived from 'Bounded' and 'Enum' rather than listed, so that one added to
+-- the type is one this knows about without that having to be remembered.
+allAlgorithms :: NonEmpty Algorithm
+allAlgorithms = minBound :| drop 1 [minBound .. maxBound]
 
 -- | The jose algorithm this is.
 algorithmJoseAlg :: Algorithm -> JWS.Alg

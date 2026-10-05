@@ -1,7 +1,7 @@
-{ mkDerivation, aeson, base, bytestring, containers, genvalidity
-, genvalidity-sydtest, genvalidity-text, genvalidity-time, jose
-, lens, lib, oidc, QuickCheck, sydtest, sydtest-discover, text
-, time
+{ mkDerivation, aeson, autodocodec, base, bytestring, containers
+, genvalidity, genvalidity-sydtest, genvalidity-sydtest-aeson
+, genvalidity-text, genvalidity-time, jose, lens, lib, oidc
+, QuickCheck, sydtest, sydtest-discover, text, time
 }:
 mkDerivation {
   pname = "oidc-gen";
@@ -12,8 +12,8 @@ mkDerivation {
     QuickCheck sydtest text time
   ];
   testHaskellDepends = [
-    aeson base bytestring containers genvalidity-sydtest jose lens oidc
-    sydtest text time
+    aeson autodocodec base bytestring containers genvalidity-sydtest
+    genvalidity-sydtest-aeson jose lens oidc sydtest text time
   ];
   testToolDepends = [ sydtest-discover ];
   homepage = "https://github.com/NorfairKing/oidc#readme";

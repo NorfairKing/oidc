@@ -34,6 +34,7 @@ library:
   - text
   - time
   - unliftio
+  - autodocodec
   - validity
   - validity-text
   - validity-time

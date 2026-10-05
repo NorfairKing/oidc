@@ -8,6 +8,8 @@
     weeder-nix.flake = false;
     validity.url = "github:NorfairKing/validity";
     validity.flake = false;
+    autodocodec.url = "github:NorfairKing/autodocodec";
+    autodocodec.flake = false;
     safe-coloured-text.url = "github:NorfairKing/safe-coloured-text";
     safe-coloured-text.flake = false;
     sydtest.url = "github:NorfairKing/sydtest";
@@ -26,6 +28,7 @@
     , pre-commit-hooks
     , weeder-nix
     , validity
+    , autodocodec
     , safe-coloured-text
     , sydtest
     , opt-env-conf
@@ -43,6 +46,7 @@
         overlays = [
           self.overlays.default
           (import (validity + "/nix/overlay.nix"))
+          (import (autodocodec + "/nix/overlay.nix"))
           (import (safe-coloured-text + "/nix/overlay.nix"))
           (import (sydtest + "/nix/overlay.nix"))
           (import (opt-env-conf + "/nix/overlay.nix"))

@@ -3,6 +3,8 @@
 
 module OIDC.ProviderSpec (spec) where
 
+import Autodocodec (eitherDecodeJSONViaCodec, toJSONViaCodec)
+import qualified Data.Aeson as JSON
 import Data.List.NonEmpty (NonEmpty (..))
 import OIDC
 import OIDC.Gen ()
@@ -14,6 +16,25 @@ spec = do
   genValidSpec @Issuer
   genValidSpec @TokenAudience
   genValidSpec @Verification
+
+  describe "the Issuer and TokenAudience codecs" $ do
+    it "reads back an issuer it wrote" $
+      forAllValid $ \issuer ->
+        eitherDecodeJSONViaCodec (JSON.encode (toJSONViaCodec issuer))
+          `shouldBe` Right (issuer :: Issuer)
+
+    it "writes an issuer as the text it is" $
+      forAllValid $ \issuer ->
+        toJSONViaCodec issuer `shouldBe` JSON.String (unIssuer issuer)
+
+    it "reads back an audience it wrote" $
+      forAllValid $ \audience ->
+        eitherDecodeJSONViaCodec (JSON.encode (toJSONViaCodec audience))
+          `shouldBe` Right (audience :: TokenAudience)
+
+    it "writes an audience as the text it is" $
+      forAllValid $ \audience ->
+        toJSONViaCodec audience `shouldBe` JSON.String (unTokenAudience audience)
 
   describe "verificationFor" $ do
     it "accepts only the issuer and audience it was given" $

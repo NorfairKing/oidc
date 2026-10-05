@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "autodocodec": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787580311,
+        "narHash": "sha256-/CIhysDXSHEVy34E0sPYzL1EK5qC2H4vBWElM+45Sro=",
+        "owner": "NorfairKing",
+        "repo": "autodocodec",
+        "rev": "b99f0f7b86794d71567332b652992fd9efb1fb64",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NorfairKing",
+        "repo": "autodocodec",
+        "type": "github"
+      }
+    },
     "crane": {
       "locked": {
         "lastModified": 1773857772,
@@ -313,6 +329,7 @@
     },
     "root": {
       "inputs": {
+        "autodocodec": "autodocodec",
         "hopinion": "hopinion",
         "marginalia": "marginalia",
         "nixpkgs": "nixpkgs_3",

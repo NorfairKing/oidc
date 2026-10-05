@@ -3,7 +3,10 @@
 
 module OIDC.AlgorithmSpec (spec) where
 
+import Autodocodec (eitherDecodeJSONViaCodec, toJSONViaCodec)
 import qualified Crypto.JOSE.JWA.JWS as JWS
+import qualified Data.Aeson as JSON
+import Data.Either (isLeft)
 import qualified Data.Set as Set
 import OIDC
 import OIDC.Gen ()
@@ -13,6 +16,24 @@ import Test.Syd.Validity
 spec :: Spec
 spec = do
   genValidSpec @Algorithm
+
+  describe "the Algorithm codec" $ do
+    it "reads back what it wrote" $
+      forAllValid $ \algorithm ->
+        eitherDecodeJSONViaCodec (JSON.encode (toJSONViaCodec algorithm))
+          `shouldBe` Right (algorithm :: Algorithm)
+
+    it "writes the name the JOSE registry gives it" $
+      forAllValid $ \algorithm ->
+        toJSONViaCodec algorithm `shouldBe` JSON.String (renderAlgorithm algorithm)
+
+    -- The whole point of the type: neither of these is a name a caller can
+    -- end up holding, whatever an issuer advertises or a configuration says.
+    it "does not read an unsigned or symmetric algorithm" $
+      map
+        (\name -> eitherDecodeJSONViaCodec (JSON.encode (JSON.String name)) :: Either String Algorithm)
+        ["none", "HS256", "HS384", "HS512"]
+        `shouldSatisfy` all isLeft
 
   describe "renderAlgorithm" $ do
     it "round-trips with parseAlgorithm" $

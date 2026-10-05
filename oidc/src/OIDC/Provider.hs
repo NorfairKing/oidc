@@ -11,6 +11,7 @@ module OIDC.Provider
   )
 where
 
+import Autodocodec
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Text (Text)
 import Data.Time (NominalDiffTime)
@@ -31,6 +32,9 @@ newtype Issuer = Issuer {unIssuer :: Text}
 
 instance Validity Issuer
 
+instance HasCodec Issuer where
+  codec = dimapCodec Issuer unIssuer codec <?> "an issuer, exactly as it spells itself"
+
 -- | An audience, exactly as the issuer spells it in the @aud@ claim.
 --
 -- This is the name the issuer knows the service by, and saying it is what
@@ -39,6 +43,11 @@ newtype TokenAudience = TokenAudience {unTokenAudience :: Text}
   deriving (Show, Eq, Generic)
 
 instance Validity TokenAudience
+
+instance HasCodec TokenAudience where
+  codec =
+    dimapCodec TokenAudience unTokenAudience codec
+      <?> "a name the issuer knows this service by"
 
 -- | Everything about an issuer that a token is checked against.
 --
