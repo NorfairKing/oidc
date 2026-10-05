@@ -105,6 +105,10 @@
         weeder-check = pkgs.weeder-nix.makeWeederCheck {
           weederToml = ./weeder.toml;
           packages = builtins.attrNames pkgs.haskellPackages.oidcPackages;
+          # The test suites count as users, so an export that only the tests
+          # reach for is still an export something uses, and the exception
+          # list stays about things nothing uses at all.
+          includeTests = true;
         };
         hopinion = pkgs.hopinion.makeHopinionCheck {
           src = ./.;

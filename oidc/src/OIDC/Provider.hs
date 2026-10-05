@@ -36,7 +36,7 @@ instance Validity Issuer
 -- This is the name the issuer knows the service by, and saying it is what
 -- stops a token minted for one service being replayed against another.
 newtype TokenAudience = TokenAudience {unTokenAudience :: Text}
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Generic)
 
 instance Validity TokenAudience
 
