@@ -1,0 +1,52 @@
+name: oidc-e2e
+version: 0.0.0.0
+synopsis: End-to-end tests for oidc against a real issuer
+author: Tom Sydney Kerckhove
+maintainer: syd@cs-syd.eu
+license: AllRightsReserved
+
+dependencies:
+- base
+
+library:
+  source-dirs: src/
+  ghc-options:
+  - -Wall
+  - -Wincomplete-uni-patterns
+  - -Wincomplete-record-updates
+  - -Wpartial-fields
+  - -Widentities
+  - -Wredundant-constraints
+  - -Wcpp-undef
+  - -Wunused-packages
+  dependencies:
+  - aeson
+  - bytestring
+  - containers
+  - http-client
+  - http-types
+  - network-uri
+  - oidc
+  - opt-env-conf
+  - sydtest
+  - text
+  - time
+
+executables:
+  oidc-e2e:
+    main: Main.hs
+    source-dirs: app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -Wall
+    - -Wincomplete-uni-patterns
+    - -Wincomplete-record-updates
+    - -Wpartial-fields
+    - -Widentities
+    - -Wredundant-constraints
+    - -Wcpp-undef
+    - -Wunused-packages
+    dependencies:
+    - oidc-e2e

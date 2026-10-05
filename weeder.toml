@@ -1,0 +1,6 @@
+unused-types = true
+type-class-roots = false
+roots = [
+  "^Main.main$",
+  "^Paths_.*",
+]

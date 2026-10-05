@@ -1,0 +1,8 @@
+debug: true
+
+operators:
+  ConstConstructor:
+    skip-calls-to:
+      - minBound
+  ConstEmptyList:
+    skip-strings: true

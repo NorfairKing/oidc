@@ -1,0 +1,85 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.38.3.
+--
+-- see: https://github.com/sol/hpack
+
+name:           oidc-gen
+version:        0.0.0.0
+synopsis:       Generators and test utilities for oidc
+description:    Generators and test utilities for <https://hackage.haskell.org/package/oidc oidc>.
+                .
+                For more info, see <https://github.com/NorfairKing/oidc the readme>.
+category:       Web
+homepage:       https://github.com/NorfairKing/oidc#readme
+bug-reports:    https://github.com/NorfairKing/oidc/issues
+author:         Tom Sydney Kerckhove
+maintainer:     syd@cs-syd.eu
+copyright:      Copyright (c) 2026 Tom Sydney Kerckhove
+license:        AllRightsReserved
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    LICENSE
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/NorfairKing/oidc
+
+library
+  exposed-modules:
+      OIDC.Gen
+      OIDC.TestUtils
+  other-modules:
+      Paths_oidc_gen
+  hs-source-dirs:
+      src/
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wpartial-fields -Widentities -Wredundant-constraints -Wcpp-undef -Wunused-packages
+  build-depends:
+      QuickCheck
+    , base >=4.7 && <5
+    , genvalidity
+    , genvalidity-text
+    , genvalidity-time
+    , jose
+    , lens
+    , oidc
+    , sydtest
+    , text
+    , time
+  default-language: Haskell2010
+
+test-suite oidc-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      OIDC.AlgorithmSpec
+      OIDC.DiscoverySpec
+      OIDC.FederationSpec
+      OIDC.KeySetSpec
+      OIDC.ProviderSpec
+      OIDC.TokenSpec
+      Paths_oidc_gen
+  hs-source-dirs:
+      test/
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wpartial-fields -Widentities -Wredundant-constraints -Wcpp-undef -Wunused-packages
+  build-tool-depends:
+      sydtest-discover:sydtest-discover
+  build-depends:
+      aeson
+    , autodocodec
+    , base >=4.7 && <5
+    , bytestring
+    , containers
+    , genvalidity-sydtest
+    , genvalidity-sydtest-aeson
+    , jose
+    , lens
+    , oidc
+    , oidc-gen
+    , sydtest
+    , text
+    , time
+    , unliftio
+  default-language: Haskell2010

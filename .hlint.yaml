@@ -1,0 +1,322 @@
+# Adapted from nix-ci's, minus everything that needs a patched hlint or that
+# is about libraries this project does not use.
+- group: { name: future, enabled: true }
+- group: { name: use-th-quotes, enabled: true }
+
+- ignore:
+    name: "Use newtype instead of data"
+- ignore:
+    name: "Use underscore"
+- ignore:
+    name: "Use const"
+- ignore:
+    name: "Use record patterns"
+- ignore:
+    name: "Use when"
+- ignore:
+    name: "Use uncurry"
+- ignore:
+    name: "Use join"
+- ignore:
+    name: "Use unless"
+- ignore:
+    name: "Use fmap"
+- ignore:
+    name: "Use bimap"
+- ignore:
+    name: "Use <&>"
+- ignore:
+    name: "Use &&"
+- ignore:
+    name: "Use ||"
+- ignore:
+    name: "Use ++"
+- ignore:
+    name: "Use :"
+- ignore:
+    name: "Use <$>"
+- ignore:
+    name: "Use tuple-section"
+- ignore:
+    name: "Functor law"
+- ignore:
+    name: "Replace case with maybe"
+# An explicit case on a sum type is the house style: it says which constructors
+# exist, and adding one forces every site to be reconsidered.
+- ignore:
+    name: "Use for_"
+- ignore:
+    name: "Use traverse_"
+- ignore:
+    name: "Replace case with fromMaybe"
+- ignore:
+    name: "Avoid lambda"
+- ignore:
+    name: "Avoid lambda using `infix`"
+
+- modules:
+    - name: Data.ByteString.Char8
+      within: []
+      message: "Don't use Char8, use proper text encoding instead."
+    - name: Data.ByteString.Lazy.Char8
+      within: []
+      message: "Don't use Char8, use proper text encoding instead."
+    - name: Control.Lens
+      # jose hands a token's header and claims, and a key's fields, to a caller
+      # only as van-Laarhoven lenses, so the modules that talk to jose have no
+      # way to read them without this. Nothing this library exports asks a
+      # caller for one.
+      within:
+        - OIDC.Token
+        - OIDC.KeySet
+        - OIDC.KeySet.Internal
+        - OIDC.TokenSpec
+        - OIDC.KeySetSpec
+        - OIDC.TestUtils
+        - OIDC.FederationSpec
+      message: "Avoid lenses; they aren't used in this codebase."
+    - name: Data.Text
+      as:
+        - Text
+      importStyle: explicitOrQualified
+    - name: Data.ByteString
+      as:
+        - SB
+        - ByteString
+      importStyle: explicitOrQualified
+    - name: Data.ByteString.Lazy
+      as:
+        - LB
+      importStyle: explicitOrQualified
+    - name: Data.Map.Strict
+      as: [Map]
+      importStyle: explicitOrQualified
+    - name: Data.Set
+      as: [Set]
+      importStyle: explicitOrQualified
+    - name: Data.List.NonEmpty
+      as: [NE, NonEmpty]
+      importStyle: explicitOrQualified
+    - name: Data.Aeson
+      as: [JSON]
+
+# Note: every entry here needs a 'within', otherwise it does nothing.
+- functions:
+    # Partial list and text functions.
+    - name: Data.List.head
+      message: "Partial function. Use 'listToMaybe' instead."
+      within: []
+    - name: Data.List.tail
+      message: "Partial function. Use pattern matching instead."
+      within: []
+    - name: Data.List.init
+      message: "Partial function. Use 'NonEmpty' or pattern matching instead."
+      within: []
+    - name: Data.List.last
+      message: "Partial function. Use 'NonEmpty' or pattern matching instead."
+      within: []
+    - name: "Data.List.!!"
+      message: "Partial function. Use 'lookup' or 'Map' instead."
+      within: []
+    - name: Data.List.genericIndex
+      message: "Partial function. Use 'lookup' or 'Map' instead."
+      within: []
+    - name: Data.Text.head
+      message: "Partial function. Use 'Text.uncons' instead."
+      within: []
+    - name: Data.Text.tail
+      message: "Partial function. Use 'Text.uncons' instead."
+      within: []
+    - name: Data.Text.init
+      message: "Partial function. Use 'Text.unsnoc' instead."
+      within: []
+    - name: Data.Text.last
+      message: "Partial function. Use 'Text.unsnoc' instead."
+      within: []
+    - name: Prelude.minimum
+      message: "Partial function. Use 'Foldable1.minimum' with 'NonEmpty' instead."
+      within: []
+    - name: Prelude.maximum
+      message: "Partial function. Use 'Foldable1.maximum' with 'NonEmpty' instead."
+      within: []
+    - name: minimumBy
+      message: "Partial function. Use pattern matching instead."
+      within: []
+    - name: maximumBy
+      message: "Partial function. Use pattern matching instead."
+      within: []
+    - name: foldl1
+      message: "Partial function. Use 'Foldable1' with 'NonEmpty' instead."
+      within: []
+    - name: foldr1
+      message: "Partial function. Use 'Foldable1' with 'NonEmpty' instead."
+      within: []
+    - name: scanl1
+      message: "Partial function. Use pattern matching instead."
+      within: []
+    - name: scanr1
+      message: "Partial function. Use pattern matching instead."
+      within: []
+    - name: "Data.Map.!"
+      message: "Partial. Use 'Map.lookup' or 'Map.findWithDefault' instead."
+      within: []
+    - name: "Data.Map.Strict.!"
+      message: "Partial. Use 'Map.lookup' or 'Map.findWithDefault' instead."
+      within: []
+    - name: Data.List.NonEmpty.fromList
+      message: "Partial function. Use 'NE.nonEmpty' instead."
+      within: []
+    - name: fromJust
+      message: "Partial function. Use pattern matching or 'maybe' instead."
+      within: []
+    - name: read
+      message: "Partial function. Use 'readMaybe' from Text.Read instead."
+      within: []
+    - name: reads
+      message: "You probably want 'readMaybe' from Text.Read instead."
+      within: []
+
+    # Partial arithmetic.
+    - name: quot
+      message: "Partial: fails on division by zero, overflows with minBound/-1."
+      within: []
+    - name: div
+      message: "Partial: fails on division by zero, overflows with minBound/-1."
+      within: []
+    - name: rem
+      message: "Partial: fails on division by zero."
+      within: []
+    - name: mod
+      message: "Partial: fails on division by zero."
+      within: []
+    - name: divMod
+      message: "Partial: fails on division by zero, overflows with minBound/-1."
+      within: []
+    - name: quotRem
+      message: "Partial: fails on division by zero, overflows with minBound/-1."
+      within: []
+    - name: GHC.Enum.pred
+      message: "Partial function. Can fail at minBound."
+      within: []
+    - name: GHC.Enum.succ
+      message: "Partial function. Can fail at maxBound."
+      within: []
+    - name: GHC.Enum.toEnum
+      message: "Partial function. Use bounded checks instead."
+      within: []
+
+    # Errors and abrupt termination.
+    - name: Prelude.error
+      message: "Use proper error handling instead."
+      within: []
+    - name: errorWithoutStackTrace
+      message: "Use proper error handling instead."
+      within: []
+    - name: throw
+      message: "Don't throw from pure code. Use 'throwIO' instead."
+      within: []
+    - name: System.Exit.exitWith
+      message: "Abrupt termination. Use 'die' with a message instead."
+      within: []
+    - name: System.Exit.exitFailure
+      message: "Abrupt termination. Use 'die' with a message instead."
+      within: []
+
+    # Unsafe.
+    - name: unsafePerformIO
+      message: "Unsafe. Avoid unless absolutely necessary."
+      within: []
+    - name: unsafeDupablePerformIO
+      message: "Unsafe. Avoid unless absolutely necessary."
+      within: []
+    - name: unsafeInterleaveIO
+      message: "Unsafe lazy IO. Avoid unless absolutely necessary."
+      within: []
+    - name: unsafeCoerce
+      message: "Unsafe. Avoid unless absolutely necessary."
+      within: []
+
+    # Space leaks and lazy IO.
+    - name: foldl
+      message: "Lazy accumulator causes space leaks. Use 'foldl'' instead."
+      within: []
+    - name: Data.Foldable.foldMap
+      message: "Lazy accumulator causes space leaks. Use 'foldMap'' instead."
+      within: []
+    - name: modifyIORef
+      message: "Lazy; causes space leaks. Use 'modifyIORef'' instead."
+      within: []
+    - name: System.IO.hGetContents
+      message: "Lazy IO. Read strictly with ByteString/Text instead."
+      within: []
+    - name: Data.Text.IO.readFile
+      message: "Guesses the encoding and reads lazily. Use ByteString.readFile and decode explicitly."
+      within: []
+    - name: Data.Text.Encoding.decodeUtf8
+      message: "Throws on invalid UTF-8. Use 'decodeUtf8'' or 'decodeUtf8Lenient' instead."
+      within: []
+
+    # Confusing.
+    - name: either
+      message: "Confusing. Use an explicit case-match on the 'Either' instead."
+      within: []
+    - name: nub
+      message: "O(n^2). Use a 'Set' instead."
+      within: []
+    - name: "return"
+      message: "Deprecated. Use 'pure' instead."
+      within: []
+    - name: fromIntegral
+      message: "Polymorphic conversion can silently overflow or truncate. Use a monomorphic conversion."
+      within: []
+
+    # Debugging leftovers.
+    - name: trace
+      message: "Debugging only. Remove before committing."
+      within: []
+    - name: traceShow
+      message: "Debugging only. Remove before committing."
+      within: []
+    - name: traceShowId
+      message: "Debugging only. Remove before committing."
+      within: []
+    - name: traceM
+      message: "Debugging only. Remove before committing."
+      within: []
+    - name: traceShowM
+      message: "Debugging only. Remove before committing."
+      within: []
+
+    # Testing.
+    - name: Test.QuickCheck.generate
+      message: "Use 'forAllValid' instead: generate a property-test input, not a one-off random value."
+      within: []
+    - name: "==>"
+      message: "Don't filter iterations; bake the precondition into the generator instead."
+      within: []
+    - name: "==="
+      message: "Use 'shouldBe' instead, for an exact and readable assertion."
+      within: []
+
+# 'undefined' is deliberately not banned: the undefined trick is how a record
+# is made to fail to compile when a field is added.
+
+- extensions:
+    - name: DeriveAnyClass
+      message: "Can produce unexpected runtime behavior. Use explicit instances or DerivingVia."
+      within: []
+    - name: DisambiguateRecordFields
+      message: "Causes confusion. Use qualified imports or hiding instead."
+      within: []
+    - name: DuplicateRecordFields
+      message: "Causes ambiguous field access. Use unique field names."
+      within: []
+    - name: NamedFieldPuns
+      message: "Reduces clarity. Use explicit record field syntax."
+      within: []
+    - name: TupleSections
+      message: "Reduces clarity. Use explicit lambdas or functions."
+      within: []
+    - name: OverloadedLabels
+      message: "Not used in this codebase."
+      within: []

@@ -1,0 +1,78 @@
+name: oidc-gen
+version: 0.0.0.0
+github: NorfairKing/oidc
+synopsis: Generators and test utilities for oidc
+description: ! 'Generators and test utilities for <https://hackage.haskell.org/package/oidc
+  oidc>.
+
+
+  For more info, see <https://github.com/NorfairKing/oidc the readme>.'
+category: Web
+author: Tom Sydney Kerckhove
+maintainer: syd@cs-syd.eu
+copyright: Copyright (c) 2026 Tom Sydney Kerckhove
+license: AllRightsReserved
+license-file: LICENSE
+
+extra-source-files:
+- LICENSE
+- CHANGELOG.md
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src/
+  ghc-options:
+  - -Wall
+  - -Wincomplete-uni-patterns
+  - -Wincomplete-record-updates
+  - -Wpartial-fields
+  - -Widentities
+  - -Wredundant-constraints
+  - -Wcpp-undef
+  - -Wunused-packages
+  dependencies:
+  - QuickCheck
+  - genvalidity
+  - genvalidity-text
+  - genvalidity-time
+  - jose
+  - lens
+  - oidc
+  - sydtest
+  - text
+  - time
+
+tests:
+  oidc-test:
+    main: Spec.hs
+    source-dirs: test/
+    build-tools: sydtest-discover
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -Wall
+    - -Wincomplete-uni-patterns
+    - -Wincomplete-record-updates
+    - -Wpartial-fields
+    - -Widentities
+    - -Wredundant-constraints
+    - -Wcpp-undef
+    - -Wunused-packages
+    dependencies:
+    - aeson
+    - bytestring
+    - autodocodec
+    - containers
+    - genvalidity-sydtest
+    - genvalidity-sydtest-aeson
+    - jose
+    - lens
+    - oidc
+    - oidc-gen
+    - sydtest
+    - text
+    - time
+    - unliftio
