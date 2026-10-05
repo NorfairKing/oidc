@@ -23,7 +23,15 @@ dependencies:
 
 library:
   source-dirs: src/
-  ghc-options: -Wall
+  ghc-options:
+  - -Wall
+  - -Wincomplete-uni-patterns
+  - -Wincomplete-record-updates
+  - -Wpartial-fields
+  - -Widentities
+  - -Wredundant-constraints
+  - -Wcpp-undef
+  - -Wunused-packages
   dependencies:
   - QuickCheck
   - genvalidity
@@ -46,6 +54,13 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     - -Wall
+    - -Wincomplete-uni-patterns
+    - -Wincomplete-record-updates
+    - -Wpartial-fields
+    - -Widentities
+    - -Wredundant-constraints
+    - -Wcpp-undef
+    - -Wunused-packages
     dependencies:
     - aeson
     - bytestring

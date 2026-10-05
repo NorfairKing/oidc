@@ -8,24 +8,17 @@ with lib;
 with haskell.lib;
 
 let
+  # A default build, with two exceptions.
+  #
+  # buildFromSdist, so that what is built is what would be published: a file
+  # the cabal file forgot to list fails here rather than on Hackage.
+  #
+  # -Werror here rather than in the cabal files, so that a warning a later GHC
+  # invents fails this build and not the build of whoever depends on this.
   oidcPkg =
     name:
     buildFromSdist (
-      overrideCabal (self.callPackage (../${name}) { })
-        (old: {
-          doBenchmark = true;
-          configureFlags = (old.configureFlags or [ ]) ++ [
-            "--ghc-options=-Wall"
-            "--ghc-options=-Wincomplete-uni-patterns"
-            "--ghc-options=-Wincomplete-record-updates"
-            "--ghc-options=-Wpartial-fields"
-            "--ghc-options=-Widentities"
-            "--ghc-options=-Wredundant-constraints"
-            "--ghc-options=-Wcpp-undef"
-            "--ghc-options=-Wunused-packages"
-            "--ghc-options=-Werror"
-          ];
-        })
+      appendConfigureFlag (self.callPackage (../${name}) { }) "--ghc-options=-Werror"
     );
 
   oidcPackages = {
