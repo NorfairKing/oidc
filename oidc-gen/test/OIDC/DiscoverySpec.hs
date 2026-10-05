@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -77,6 +78,23 @@ spec = do
               other -> other
         )
         `shouldBe` Right [RS256]
+
+    it "refuses a document whose advertised algorithms are not names" $
+      parseDiscovery
+        (Issuer "https://sts.example.com")
+        ( JSON.encode $ case aDocument of
+            JSON.Object object ->
+              JSON.Object
+                ( KeyMap.insert
+                    "id_token_signing_alg_values_supported"
+                    (JSON.toJSON @[Int] [1, 2])
+                    object
+                )
+            other -> other
+        )
+        `shouldSatisfy` \case
+          Left _ -> True
+          Right _ -> False
 
     it "reads a document that advertises no algorithms at all" $
       fmap
